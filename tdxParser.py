@@ -3,7 +3,11 @@ AUTHOR: Alexa Roskowski
 2/16/23
 
 
-This is a parser of CSV files (specifically for the use of TDX ticket reports)
+This is a parser of CSV files specifically for the use of TDX ticket reports
+
+This is just a protype that takes one specific file (FA 2022) and will display a
+matplot graph of the distribution of the number of tickets that USS Classrooms
+were responsible for by week.
 '''
 
 import csv #used for reading the file
