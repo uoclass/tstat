@@ -11,76 +11,114 @@ were responsible for by week.
 '''
 
 import csv #used for reading the file
+import os
 from datetime import datetime,date #used for sorting by modified date
-import matplotlib.pyplot as plt
-
-
-#will eveuntally want this to take any filename
-f = open("TEST_tickets_FA_2022.csv", mode = 'r')
-
-csv_reader = csv.DictReader(f)
-
-classroomTickets = [] #list of all the tickets where USS Classrooms are responsible
-for row in csv_reader:
-	#loop through and check the responsible group
-	if row['Resp Group'] == 'USS-Classrooms':
-		#add to the list
-		classroomTickets.append(row)
-
-f.close() #we are done taking the important data from the csv file so close it
+import matplotlib.pyplot as plt #used for plotting pretty graphs
 
 
 
 
-#sort the tickets by the modified date
-classroomTickets.sort(key=lambda d: datetime.strptime(d['Modified'], "%m/%d/%Y %H:%M"))
+def ticketCountPerTerm(fp):
+	#will eveuntally want this to take any filename
+	f = open(fp, mode = 'r')
 
-ticketPerWeek = [0] * 11 #list of the counts of tickets per week
+	csv_reader = csv.DictReader(f)
 
-first_ticket = datetime.strptime(classroomTickets[0]['Modified'], "%m/%d/%Y %H:%M")
+	classroomTickets = [] #list of all the tickets where USS Classrooms are responsible
+	for row in csv_reader:
+		#loop through and check the responsible group
+		if row['Resp Group'] == 'USS-Classrooms':
+			#add to the list
+			classroomTickets.append(row)
 
-for ticket in classroomTickets:
-	#figure out which week the ticket is in
-	date = datetime.strptime(ticket['Modified'], "%m/%d/%Y %H:%M")
-	delta = date - first_ticket
-	index = delta.days // 7
-	#incase you pulled a date a little too far
-	index = index - 1  if index >= 11 else index
-
-	#add to the count of whcih week its in
-	ticketPerWeek[index] += 1
-
-print(ticketPerWeek)
+	f.close() #we are done taking the important data from the csv file so close it
 
 
-## GRAPHING TIME ##
 
-weeks = ["Week " + str(i + 1) for i in range(11)]
-print(weeks)
 
-fig,ax = plt.subplots(figsize = (10, 5))
+	#sort the tickets by the modified date
+	classroomTickets.sort(key=lambda d: datetime.strptime(d['Modified'], "%m/%d/%Y %H:%M"))
 
-ax.bar(weeks, ticketPerWeek, color = 'green')
+	ticketPerWeek = [0] * 11 #list of the counts of tickets per week
 
-#plt.xlabel("Weeks")
-ax.set_ylabel("Count")
-ax.set_title("Number of Tickets Per Week for Fall 2022")
+	first_ticket = datetime.strptime(classroomTickets[0]['Modified'], "%m/%d/%Y %H:%M")
 
-rect = ax.patches
-for rect, c in zip(rect, ticketPerWeek):
-	#add the count to the graph
-	height = rect.get_height()
-	ax.text(
-            rect.get_x() + rect.get_width() / 2,
-            height + 0.01,
-            c,
-            horizontalalignment='center',
-            verticalalignment='bottom',
-            color='Black',
-            fontsize='medium'
-		)
+	for ticket in classroomTickets:
+		#figure out which week the ticket is in
+		date = datetime.strptime(ticket['Modified'], "%m/%d/%Y %H:%M")
+		delta = date - first_ticket
+		index = delta.days // 7
+		#incase you pulled a date a little too far
+		index = index - 1  if index >= 11 else index
 
-plt.show()
+		#add to the count of whcih week its in
+		ticketPerWeek[index] += 1
+
+	print(ticketPerWeek)
+
+
+	## GRAPHING TIME ##
+
+	weeks = ["Week " + str(i + 1) for i in range(11)] # list of week count for graph
+	#print(weeks)
+
+	#initialize the graph
+	fig,ax = plt.subplots(figsize = (10, 5))
+	ax.bar(weeks, ticketPerWeek, color = 'green')
+
+	#plt.xlabel("Weeks") # removed cause each bar is labeled Week (num)
+	ax.set_ylabel("Count")
+	ax.set_title("Number of Tickets Per Week for Fall 2022")
+
+	rect = ax.patches
+	for rect, c in zip(rect, ticketPerWeek):
+		#add the count to the graph
+		height = rect.get_height()
+		ax.text(
+	            rect.get_x() + rect.get_width() / 2,
+	            height + 0.01,
+	            c,
+	            horizontalalignment='center',
+	            verticalalignment='bottom',
+	            color='Black',
+	            fontsize='medium'
+			)
+
+	plt.show()
+
+
+
+
+def main():
+	while(1):
+		print("To quit just enter nothing")
+		filename = input("Enter a csv file: ")
+		filename.strip()
+		if filename == "":
+			#person want to quit, so return so the graph funct isn't called
+			return
+		if not (os.path.exists(filename)):
+			#file does not exist make them try again
+			print("Sorry that file does not exist :(")
+		else:
+			#file exists
+			#check if its a cvs file
+			if (os.path.splitext(filename)[-1].lower()) != '.csv':
+				#not a csv file make them try again
+				print("Sorry that file is not a csv file :( ")
+			else:
+				#file exists and is a csv file so break out of the loop
+				break
+
+
+
+
+	ticketCountPerTerm(filename)
+	return
+
+
+if __name__ == "__main__":
+	main()
 
 
 
