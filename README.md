@@ -1,2 +1,2 @@
 # TDX_Tickets
-USS Classrooms TDX report parser and vizualizer
+TDX report parser and vizualizer for use by USS Classrooms.
