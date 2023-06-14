@@ -16,35 +16,38 @@ import matplotlib.pyplot as plt  # used for plotting pretty graphs
 
 
 def ticketCountPerTerm(args_dict):
-    check_fields(args_dict.get('input'))
-    f = open(args_dict.get('input'), mode='r')
+    check_fields(args_dict.get("input"))
+    f = open(args_dict.get("input"), mode="r")
     csv_reader = csv.DictReader(f)
 
-
-    classroomTickets = []  # list of all the tickets where USS Classrooms are responsible
+    classroomTickets = (
+        []
+    )  # list of all the tickets where USS Classrooms are responsible
     for row in csv_reader:
         # loop through and check the responsible group
-        if row['Resp Group'] == 'USS-Classrooms':
+        if row["Resp Group"] == "USS-Classrooms":
             # add to the list
             classroomTickets.append(row)
 
     f.close()  # we are done taking the important data from the csv file so close it
 
     # sort the tickets by the modified date
-    classroomTickets.sort(key=lambda d: datetime.strptime(d['Modified'], "%m/%d/%Y %H:%M"))
+    classroomTickets.sort(
+        key=lambda d: datetime.strptime(d["Modified"], "%m/%d/%Y %H:%M")
+    )
 
     ticketsPerWeek = [0] * 11  # list of the counts of tickets per week
 
-    if args_dict.get('week'):
-        first_day = args_dict['week']
+    if args_dict.get("week"):
+        first_day = args_dict["week"]
     else:
-        first_day = datetime.strptime(classroomTickets[0]['Modified'], "%m/%d/%Y %H:%M")
+        first_day = datetime.strptime(classroomTickets[0]["Modified"], "%m/%d/%Y %H:%M")
     first_day = get_monday(first_day)
     print(f"the actual first date being used is {first_day}")
 
     for ticket in classroomTickets:
         # figure out which week the ticket is in
-        date = datetime.strptime(ticket['Modified'], "%m/%d/%Y %H:%M")
+        date = datetime.strptime(ticket["Modified"], "%m/%d/%Y %H:%M")
         delta = date - first_day
         week = delta.days // 7
         if week < 0:
@@ -58,15 +61,15 @@ def ticketCountPerTerm(args_dict):
 
     # initialize the graph
     fig, ax = plt.subplots(figsize=(10, 5))
-    if args_dict.get('color'):
-        ax.bar(weeks, ticketsPerWeek, color=args_dict.get('color'))
+    if args_dict.get("color"):
+        ax.bar(weeks, ticketsPerWeek, color=args_dict.get("color"))
     else:
-        ax.bar(weeks, ticketsPerWeek, color='green')
+        ax.bar(weeks, ticketsPerWeek, color="green")
 
     # plt.xlabel("Weeks") # removed cause each bar is labeled Week (num)
     ax.set_ylabel("Count")
-    if args_dict.get('name'):
-        ax.set_title(args_dict.get('name'))
+    if args_dict.get("name"):
+        ax.set_title(args_dict.get("name"))
     else:
         ax.set_title("Number of Tickets Per Week")
 
@@ -78,13 +81,14 @@ def ticketCountPerTerm(args_dict):
             rect.get_x() + rect.get_width() / 2,
             height + 0.01,
             c,
-            horizontalalignment='center',
-            verticalalignment='bottom',
-            color='Black',
-            fontsize='medium'
+            horizontalalignment="center",
+            verticalalignment="bottom",
+            color="Black",
+            fontsize="medium",
         )
 
     plt.show()
+
 
 def check_fields(filename):
     """
@@ -99,6 +103,7 @@ def check_fields(filename):
         print("File input does not contain Modified", file=sys.stderr)
         exit(1)
     file.close()
+
 
 def get_monday(date: datetime):
     """
