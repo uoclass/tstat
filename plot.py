@@ -96,7 +96,7 @@ def check_fields(filename):
         print("File input does not contain Resp Group", file=sys.stderr)
         exit(1)
     if not "Modified" in file_read[0]:
-        print("File input does not contain Modified", file=stderr)
+        print("File input does not contain Modified", file=sys.stderr)
         exit(1)
     file.close()
 
