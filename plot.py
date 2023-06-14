@@ -36,35 +36,38 @@ def ticketCountPerTerm(args_dict):
         key=lambda d: datetime.strptime(d["Modified"], "%m/%d/%Y %H:%M")
     )
 
-    ticketsPerWeek = [0] * 11  # list of the counts of tickets per week
+    # number of weeks
+    weeks = args_dict.get('weeks') if args_dict.get('weeks') else 11
 
-    if args_dict.get("week"):
-        first_day = args_dict["week"]
+    # list of the counts of tickets per week
+    ticketsPerWeek = [0] * weeks
+
+    if args_dict.get('termstart'):
+        first_day = args_dict['termstart']
     else:
         first_day = datetime.strptime(classroomTickets[0]["Modified"], "%m/%d/%Y %H:%M")
     first_day = get_monday(first_day)
-    print(f"the actual first date being used is {first_day}")
 
     for ticket in classroomTickets:
         # figure out which week the ticket is in
         date = datetime.strptime(ticket["Modified"], "%m/%d/%Y %H:%M")
         delta = date - first_day
         week = delta.days // 7
-        if week < 0:
+        if week < 0 or week >= weeks:
             continue
         # add to the count of whcih week its in
         ticketsPerWeek[week] += 1
 
     # Refactor this to a separate graphing function or file
-    weeks = ["Week " + str(i + 1) for i in range(11)]  # list of week count for graph
+    week_counts = ["Week " + str(i + 1) for i in range(weeks)]  # list of week count for graph
     # print(weeks)
 
     # initialize the graph
     fig, ax = plt.subplots(figsize=(10, 5))
-    if args_dict.get("color"):
-        ax.bar(weeks, ticketsPerWeek, color=args_dict.get("color"))
+    if args_dict.get('color'):
+        ax.bar(week_counts, ticketsPerWeek, color=args_dict.get('color'))
     else:
-        ax.bar(weeks, ticketsPerWeek, color="green")
+        ax.bar(week_counts, ticketsPerWeek, color='green')
 
     # plt.xlabel("Weeks") # removed cause each bar is labeled Week (num)
     ax.set_ylabel("Count")
@@ -100,6 +103,7 @@ def check_fields(filename):
         print("File input does not contain Resp Group", file=sys.stderr)
         exit(1)
     if not "Modified" in file_read[0]:
+        print("File input does not contain Modified", file=sys.stderr)
         print("File input does not contain Modified", file=sys.stderr)
         exit(1)
     file.close()

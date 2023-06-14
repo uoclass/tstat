@@ -43,8 +43,11 @@ def check_date(date_text: str):
     try:
         date = datetime.strptime(date_text, "%m/%d/%Y")
     except:
-        print(f"Date {date_text} does not follow mm/dd/yyyy format", file=sys.stderr)
-        exit(1)
+        try:
+            date = datetime.strptime(date_text, "%Y-%m-%d")
+        except:
+            print(f"Date {date_text} does not follow mm/dd/yyyy format", file=sys.stderr)
+            exit(1)
     return date
 
 
@@ -63,14 +66,15 @@ def main():
     subparsers = parser.add_subparsers(help='sub_command help')
     parser.add_argument('-n', '--name', type=str, help='Set the name of the plot.')
     parser.add_argument('-c', '--color', choices=colors, help='Set the color of the plot.')
-    parser.add_argument('-w', '--week', type=str, help='Set week 1 to week of given mm/dd/yyyy (otherwise first ticket date used)')
+    parser.add_argument('-t', '--termstart', type=str, help='Set week 1 to week of given mm/dd/yyyy (otherwise first ticket date used)')
+    parser.add_argument('-w', '--weeks', type=int, help='Set number of weeks in the term')
     args = parser.parse_args()
     args_dict = vars(args)
 
     # custom values
     args_dict['input'] = input_filename
-    if args_dict.get('week'):
-        args_dict['week'] = check_date(args_dict.get('week'))
+    if args_dict.get('termstart'):
+        args_dict['termstart'] = check_date(args_dict.get('termstart'))
 
     # call plot tool
     plot.ticketCountPerTerm(args_dict)
