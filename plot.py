@@ -38,14 +38,12 @@ def ticketCountPerTerm(args_dict):
 
     # list of the counts of tickets per week
     ticketsPerWeek = [0] * weeks
-    print(ticketsPerWeek)
 
     if args_dict.get('termstart'):
         first_day = args_dict['termstart']
     else:
         first_day = datetime.strptime(classroomTickets[0]['Modified'], "%m/%d/%Y %H:%M")
     first_day = get_monday(first_day)
-    print(f"the actual first date being used is {first_day}")
 
     for ticket in classroomTickets:
         # figure out which week the ticket is in
@@ -101,7 +99,7 @@ def check_fields(filename):
         print("File input does not contain Resp Group", file=sys.stderr)
         exit(1)
     if not "Modified" in file_read[0]:
-        print("File input does not contain Modified", file=stderr)
+        print("File input does not contain Modified", file=sys.stderr)
         exit(1)
     file.close()
 
