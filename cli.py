@@ -16,7 +16,7 @@ import os
 import datetime
 
 # import files
-import plot
+import presets
 
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"] 
@@ -88,7 +88,7 @@ def main():
         args["termstart"] = check_date(args.get("termstart"))
 
     # call plot tool
-    plot.per_week(args)
+    presets.per_week(args)
 
 if __name__ == "__main__":
     main()

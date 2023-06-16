@@ -1,5 +1,5 @@
 """
-Ticket Sorting and Plotting for tdxplot
+Ticket Sorting for tdxplot
 by Alexa Roskowski, Alex JPS
 2023-02-16
 
