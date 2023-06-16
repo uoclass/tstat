@@ -8,112 +8,127 @@ Sorts tickets and displays graph from info in a CSV file from a TDX Report.
 Report must at least contain Responsible Group and Modified.
 """
 
-import csv  # used for reading the file
+# import libraries
+import csv
 import os
 import sys
-from datetime import *  # used for sorting by modified date
-import matplotlib.pyplot as plt  # used for plotting pretty graphs
+from datetime import *
+import io
+from matplotlib import pyplot
 
+TIME_FORMATS: list[str] = [
+    # 12 hour
+    "%Y-%m-%d %H:%M", "%m/%d/%Y %H:%M", "%m/%d/%y %H:%M", "%d.%m.%Y %H:%M", "%d.%m.%y %H:%M",
+    # 24 hour
+    "%Y-%m-%d %I:%M %p", "%m/%d/%Y %I:%M %p", "%m/%d/%y %I:%M %p", "%d.%m.%Y %I:%M %p", "%d.%m.%y %I:%M %p"
+]
 
-def ticketCountPerTerm(args_dict):
-    check_fields(args_dict.get("input"))
-    f = open(args_dict.get("input"), mode="r")
-    csv_reader = csv.DictReader(f)
+def per_week(args):
+    check_fields(args["filename"])
+    csv_file: io.TextIOWrapper = open(args["filename"], mode="r")
+    csv_tickets: csv.DictReader = csv.DictReader(csv_file)
 
-    classroomTickets = (
-        []
-    )  # list of all the tickets where USS Classrooms are responsible
-    for row in csv_reader:
-        # loop through and check the responsible group
-        if row["Resp Group"] == "USS-Classrooms":
-            # add to the list
-            classroomTickets.append(row)
-
-    f.close()  # we are done taking the important data from the csv file so close it
+    # keep tickets for which USS Classrooms is responsible
+    tickets: list[csv.DictReader] = []
+    for ticket in csv_tickets:
+        if ticket["Resp Group"] == "USS-Classrooms":
+            # NOTE implement ticket objects to add to list
+            tickets.append(ticket)
+    csv_file.close()
 
     # sort the tickets by the modified date
-    classroomTickets.sort(
-        key=lambda d: datetime.strptime(d["Modified"], "%m/%d/%Y %H:%M")
-    )
+    time_format: str = get_time_format(tickets[0]["Modified"])
+    tickets.sort(key=lambda ticket: datetime.strptime(ticket["Modified"], time_format))
 
     # number of weeks
-    weeks = args_dict.get('weeks') if args_dict.get('weeks') else 11
+    weeks = args.get("weeks") if args.get("weeks") else 11
 
     # list of the counts of tickets per week
-    ticketsPerWeek = [0] * weeks
+    weekly_count = [0] * weeks
 
-    if args_dict.get('termstart'):
-        first_day = args_dict['termstart']
+    if args.get("termstart"):
+        first_day = args["termstart"]
     else:
-        first_day = datetime.strptime(classroomTickets[0]["Modified"], "%m/%d/%Y %H:%M")
+        first_day = datetime.strptime(tickets[0]["Modified"], "%m/%d/%Y %H:%M")
     first_day = get_monday(first_day)
 
-    for ticket in classroomTickets:
+    for ticket in tickets:
         # figure out which week the ticket is in
-        date = datetime.strptime(ticket["Modified"], "%m/%d/%Y %H:%M")
-        delta = date - first_day
-        week = delta.days // 7
+        date: datetime = datetime.strptime(ticket["Modified"], time_format)
+        delta: datetime = date - first_day
+        week: int = delta.days // 7
         if week < 0 or week >= weeks:
             continue
         # add to the count of whcih week its in
-        ticketsPerWeek[week] += 1
+        weekly_count[week] += 1
 
-    # Refactor this to a separate graphing function or file
-    week_counts = ["Week " + str(i + 1) for i in range(weeks)]  # list of week count for graph
-    # print(weeks)
+    # FIXME Refactor this to a separate graphing function or file
+    week_counts: list[int] = ["Week " + str(i + 1) for i in range(weeks)]
 
     # initialize the graph
-    fig, ax = plt.subplots(figsize=(10, 5))
-    if args_dict.get('color'):
-        ax.bar(week_counts, ticketsPerWeek, color=args_dict.get('color'))
+    fig, ax = pyplot.subplots(figsize=(10, 5))
+    if args.get("color"):
+        ax.bar(week_counts, weekly_count, color=args.get("color"))
     else:
-        ax.bar(week_counts, ticketsPerWeek, color='green')
+        ax.bar(week_counts, weekly_count, color="green")
 
-    # plt.xlabel("Weeks") # removed cause each bar is labeled Week (num)
+    # pyplot.xlabel("Weeks") # removed cause each bar is labeled Week (num)
     ax.set_ylabel("Count")
-    if args_dict.get("name"):
-        ax.set_title(args_dict.get("name"))
+    if args.get("name"):
+        ax.set_title(args.get("name"))
     else:
         ax.set_title("Number of Tickets Per Week")
 
     rect = ax.patches
-    for rect, c in zip(rect, ticketsPerWeek):
+    for rect, c in zip(rect, weekly_count):
         # add the count to the graph
         height = rect.get_height()
         ax.text(
             rect.get_x() + rect.get_width() / 2,
             height + 0.01,
             c,
-            horizontalalignment="center",
-            verticalalignment="bottom",
-            color="Black",
-            fontsize="medium",
+            horizontalalignment = "center",
+            verticalalignment = "bottom",
+            color = "Black",
+            fontsize = "medium"
         )
 
-    plt.show()
-
+    pyplot.show()
 
 def check_fields(filename):
     """
     Check that the required fields are present in file.
     """
-    file = open(filename, mode="r")
-    file_read = file.readlines()
+    file: io.TextIOWrapper = open(filename, mode="r")
+    file_read: str = file.readlines()
     if not "Resp Group" in file_read[0]:
         print("File input does not contain Resp Group", file=sys.stderr)
         exit(1)
     if not "Modified" in file_read[0]:
-        print("File input does not contain Modified", file=sys.stderr)
-        print("File input does not contain Modified", file=sys.stderr)
+        print("File input does not contain Modified", file=stderr)
         exit(1)
     file.close()
 
-
 def get_monday(date: datetime):
     """
-    Given datetime, return the Monday of that week.
+    Given datetime, return Monday midnight of that week.
     """
-    date = datetime.combine(date, time(0, 0))
+    date: datetime = datetime.combine(date, time(0, 0))
     while datetime.weekday(date):
         date -= timedelta(days=1)
     return date
+
+def get_time_format(time_text: str):
+    """
+    Checks that time adheres to one of TIME_FORMATS.
+    Returns format string or throws error if no match.
+    """
+    time_text.strip()
+    for time_format in TIME_FORMATS:
+        try:
+            datetime.strptime(time_text, time_format)
+            return time_format
+        except:
+            continue
+    print(f"Time {time_text} not recognized, try yyyy-mm-dd hh:mm", file=sys.stderr)
+    exit(1)
