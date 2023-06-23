@@ -88,7 +88,12 @@ def main():
         args["termstart"] = check_date(args.get("termstart"))
 
     # call plot tool
-    presets.per_week(args)
+    # presets.per_week(args) FIXME: Commenting out for jerry-rigged solution to year report
+    presets.run_year_report(args)
+
+    # Org = Organization(args)
+    # Org.run_year_report()
+    # Org.per_week()
 
 if __name__ == "__main__":
     main()

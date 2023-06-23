@@ -105,7 +105,7 @@ def check_fields(filename):
         print("File input does not contain Resp Group", file=sys.stderr)
         exit(1)
     if not "Modified" in file_read[0]:
-        print("File input does not contain Modified", file=stderr)
+        print("File input does not contain Modified", file=sys.stderr)
         exit(1)
     file.close()
 
@@ -132,3 +132,29 @@ def get_time_format(time_text: str):
             continue
     print(f"Time {time_text} not recognized, try yyyy-mm-dd hh:mm", file=sys.stderr)
     exit(1)
+
+def run_year_report(args):
+    check_fields(args["filename"])
+    csv_file: io.TextIOWrapper = open(args["filename"], mode="r")
+    csv_tickets: csv.DictReader = csv.DictReader(csv_file)
+
+    # keep tickets in each building
+    buildings = {}
+    # tickets: list[csv.DictReader] = []
+    
+    for ticket in csv_tickets:
+        building = ticket["Class Support Building"]
+        classroom = ticket["Room number"]
+
+        if building not in buildings:
+            buildings[building] = {classroom: 0}
+
+        buildings[building].append(ticket)
+
+    res = sorted(buildings, key=lambda key: len(buildings[key]))
+    for word in res:
+        print(word, "has", len(buildings[word]), "tickets")
+        
+        # print(building, 'has', len(buildings[building]), 'tickets')
+
+    csv_file.close()
