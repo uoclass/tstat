@@ -109,17 +109,13 @@ class Ticket:
     modified: datetime
     status: Status
 
-    def __init__(self, org: "Organization", csv_ticket: dict) -> None:
-        self.id = int(csv_ticket["ID"]) if csv_ticket.get("ID") else None
-        self.title = csv_ticket.get("Title")
-        self.responsible = org.find_group(csv_ticket.get("Resp Group"))
-        self.requestor = org.find_user(csv_ticket.get("Requestor"),
-                                       csv_ticket.get("Requestor Email"),
-                                       csv_ticket.get("Requestor Phone"))
-        self.department = org.find_department(csv_ticket.get("Acct/Dept"))
-        self.room = org.find_room(csv_ticket.get("Class Support Building"),
-                                  csv_ticket.get("Room number"))
-        print(self)
+    def __init__(self) -> None:
+        self.id = None
+        self.title = None
+        self.responsible = None
+        self.requestor = None
+        self.department = None
+        self.room = None
         
     def __str__(self) -> str:
         return f"""{self.title}

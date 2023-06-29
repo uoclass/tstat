@@ -44,6 +44,19 @@ tickets: {len(self.tickets)}"""
     def __repr__(self) -> str:
         return self.__str__()
 
+    def new_ticket(self, csv_ticket: dict) -> Ticket:
+        new_ticket = Ticket()
+        new_ticket.id = int(csv_ticket["ID"]) if csv_ticket.get("ID") else None
+        new_ticket.title = csv_ticket.get("Title")
+        new_ticket.responsible = self.find_group(csv_ticket.get("Resp Group"))
+        new_ticket.requestor = self.find_user(csv_ticket.get("Requestor"),
+                                       csv_ticket.get("Requestor Email"),
+                                       csv_ticket.get("Requestor Phone"))
+        new_ticket.department = self.find_department(csv_ticket.get("Acct/Dept"))
+        new_ticket.room = self.find_room(csv_ticket.get("Class Support Building"),
+                                  csv_ticket.get("Room number"))
+        return new_ticket
+
     def populate(self, args: dict) -> None:
         """
         Given filename, read CSV.
@@ -54,7 +67,7 @@ tickets: {len(self.tickets)}"""
         count = 0
         for row in csv_tickets:
             count += 1
-            ticket = Ticket(self, row)
+            ticket = self.new_ticket(row)
             self.tickets[ticket.id] = ticket
             if count == 1:
                 check_fields(row)
