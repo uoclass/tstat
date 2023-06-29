@@ -49,7 +49,7 @@ tickets: {len(self.tickets)}"""
         Given filename, read CSV.
         Populate buildings, rooms, tickets, etc.
         """
-        csv_file: io.TextIOWrapper = open(args["filename"], mode="r")
+        csv_file: io.TextIOWrapper = open(args["filename"], mode="r", encoding="utf-8-sig")
         csv_tickets: csv.DictReader = csv.DictReader(csv_file)
         count = 0
         for row in csv_tickets:
@@ -63,35 +63,37 @@ tickets: {len(self.tickets)}"""
             print("Ticket report is empty, exiting...", file=sys.stderr)
             exit(1)
         
-    def add_building(self, building: Building) -> None:
-        self.buildings.append(building)
-
     def find_group(self, name: str) -> Group:
         """
         Return group with name if already exists.
-        Otherwise create new group, add to list, and return.
+        Otherwise add new group and return.
         """
+        if not name:
+            name = "Other"
         if self.groups.get(name):
             return self.groups[name] 
         self.groups[name] = Group(name)
         return self.groups[name]
 
-    def find_user(self, name: str, email: str, phone: str) -> User:
+    def find_user(self, email: str, name: str, phone: str) -> User:
         """
-        Return user with given info if already exists.
-        Otherwise create new user, add to list, and return.
+        Return user with given email if already exists.
+        Otherwise add new user with given info and return.
         """
-        if self.users.get(name):
-            if self.users[name].email == email and self.users[name].phone == phone:
-                return self.users[name] 
-        self.users[name] = User(name, email, phone)
-        return self.users[name]
+        if not email:
+            email = "Other"
+        if self.users.get(email):
+            return self.users[email]
+        self.users[email] = User(email, name, phone)
+        return self.users[email]
 
     def find_department(self, name: str) -> Department:
         """
         Return department with name if already exists.
-        Otherwise create new department, add to list, and return.
+        Otherwise add new department and return.
         """
+        if not name:
+            name = "Other"
         if self.departments.get(name):
             return self.departments[name] 
         self.departments[name] = Department(name)
@@ -100,8 +102,12 @@ tickets: {len(self.tickets)}"""
     def find_room(self, building_name: str, room_identifier: str) -> Room:
         """
         Return room with building name and identifier if already exists.
-        Otherwise create new room or building as needed and return.
+        Otherwise add new room or building as needed and return.
         """
+        if not building_name:
+            building_name = "Other"
+        if not room_identifer:
+            room_identifer = "Other"
         building: Building = self.find_building(building_name)
         if building.rooms.get(room_identifier):
             return building.rooms[room_identifier]
@@ -111,8 +117,10 @@ tickets: {len(self.tickets)}"""
     def find_building(self, name) -> Building:
         """
         Return building with name if already exists.
-        Otherwise create new building and return.
+        Otherwise add new building and return.
         """
+        if not name:
+            name = "Other"
         if self.buildings.get(name):
             return self.buildings[name]
         self.buildings[name] = Building(name)

@@ -44,20 +44,20 @@ class User:
     """
     A TDX user (typically as requestor on a ticket).
     """
-    name: str
     email: str
+    name: str
     phone: str
 
-    def __init__(self, name, email, phone) -> None:
-       self.name = name
+    def __init__(self, email, name, phone) -> None:
        self.email = email
+       self.name = name
        self.phone = phone
 
     def __str__(self) -> str:
-        return f"User {self.name}"
+        return f"User {self.email} with name {self.name}"
 
     def __repr__(self) -> str:
-        return f"User({self.name})"
+        return f"User({self.email}, {self.name})"
 
 class Group:
     """
@@ -120,7 +120,6 @@ class Ticket:
         self.room = org.find_room(csv_ticket.get("Class Support Building"),
                                   csv_ticket.get("Room number"))
         print(self)
-        print(org)
         
     def __str__(self) -> str:
         return f"""{self.title}
