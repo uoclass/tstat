@@ -17,6 +17,7 @@ import datetime
 
 # import files
 import presets
+from organization import *
 
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"] 
@@ -89,11 +90,10 @@ def main():
 
     # call plot tool
     # presets.per_week(args) FIXME: Commenting out for jerry-rigged solution to year report
-    presets.run_year_report(args)
+    # presets.run_year_report(args)
 
-    # Org = Organization(args)
-    # Org.run_year_report()
-    # Org.per_week()
+    org = Organization()
+    org.populate(args)
 
 if __name__ == "__main__":
     main()
