@@ -116,6 +116,9 @@ class Ticket:
         self.requestor = None
         self.department = None
         self.room = None
+        self.created = None
+        self.modified = None
+        self.status = None
         
     def __str__(self) -> str:
         return f"""{self.title}
@@ -123,7 +126,11 @@ ID: {self.id}
 Responsible: {self.responsible.name}
 Requestor: {self.requestor.name}
 Department: {self.department.name}
-Room: {self.room.building.name} {self.room.identifier}"""
+Room: {self.room.building.name} {self.room.identifier}
+Created: {self.created}
+Modified: {self.modified}
+Status: {self.status}"""
 
     def __repr__(self) -> str:
         return self.__str__()
+

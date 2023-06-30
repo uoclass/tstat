@@ -19,6 +19,13 @@ from ticketclasses import *
 
 # Constants
 STANDARD_FIELDS = ["ID", "Title", "Resp Group", "Requestor", "Requestor Email", "Requestor Phone", "Acct/Dept", "Class Support Building", "Room number", "Created", "Modified", "Status"]
+TIME_FORMATS: list[str] = [
+    # 12 hour
+    "%Y-%m-%d %H:%M", "%m/%d/%Y %H:%M", "%m/%d/%y %H:%M", "%d.%m.%Y %H:%M", "%d.%m.%y %H:%M",
+    # 24 hour
+    "%Y-%m-%d %I:%M %p", "%m/%d/%Y %I:%M %p", "%m/%d/%y %I:%M %p", "%d.%m.%Y %I:%M %p", "%d.%m.%y %I:%M %p"
+]
+DEFAULT_WEEKS = 11
 
 class Organization:
     buildings: dict[str, Building]
@@ -26,6 +33,7 @@ class Organization:
     departments: dict[str, Department]
     groups: dict[str, Group]
     tickets: dict[int, Ticket]
+    time_format: str
 
     def __init__(self) -> None:
         self.buildings = {}
@@ -44,9 +52,9 @@ tickets: {len(self.tickets)}"""
     def __repr__(self) -> str:
         return self.__str__()
 
-    def new_ticket(self, csv_ticket: dict) -> Ticket:
-        new_ticket = Ticket()
-        new_ticket.id = int(csv_ticket["ID"]) if csv_ticket.get("ID") else None
+    def add_new_ticket(self, csv_ticket: dict) -> None:
+        new_ticket: Ticket = Ticket()
+        new_ticket.id = int(csv_ticket["ID"]) if csv_ticket.get("ID") else 0
         new_ticket.title = csv_ticket.get("Title")
         new_ticket.responsible = self.find_group(csv_ticket.get("Resp Group"))
         new_ticket.requestor = self.find_user(csv_ticket.get("Requestor"),
@@ -55,7 +63,15 @@ tickets: {len(self.tickets)}"""
         new_ticket.department = self.find_department(csv_ticket.get("Acct/Dept"))
         new_ticket.room = self.find_room(csv_ticket.get("Class Support Building"),
                                   csv_ticket.get("Room number"))
-        return new_ticket
+        
+        created: str = csv_ticket.get("Created")
+        modified: str = csv_ticket.get("Modified")
+        self.time_format = get_time_format(created)
+    
+        new_ticket.created: datetime = datetime.strptime(created, self.time_format) if created else None
+        new_ticket.modified: datetime = datetime.strptime(modified, self.time_format) if modified else None
+        
+        self.tickets[new_ticket.id] = new_ticket
 
     def populate(self, args: dict) -> None:
         """
@@ -67,8 +83,7 @@ tickets: {len(self.tickets)}"""
         count = 0
         for row in csv_tickets:
             count += 1
-            ticket = self.new_ticket(row)
-            self.tickets[ticket.id] = ticket
+            self.add_new_ticket(row)
             if count == 1:
                 check_fields(row)
         csv_file.close()
@@ -119,8 +134,8 @@ tickets: {len(self.tickets)}"""
         """
         if not building_name:
             building_name = "Other"
-        if not room_identifer:
-            room_identifer = "Other"
+        if not room_identifier:
+            room_identifier = "Other"
         building: Building = self.find_building(building_name)
         if building.rooms.get(room_identifier):
             return building.rooms[room_identifier]
@@ -138,6 +153,31 @@ tickets: {len(self.tickets)}"""
             return self.buildings[name]
         self.buildings[name] = Building(name)
         return self.buildings[name]
+    
+    def per_week(self, args) -> list[int]:
+        first_ticket = self.tickets[list(self.tickets.keys())[0]]
+        # number of weeks
+        num_weeks = args.get("weeks") if args.get("weeks") else DEFAULT_WEEKS
+
+        # list of the counts of tickets per week
+        week_counts = [0] * num_weeks
+
+        if args.get("termstart"):
+            first_day = args["termstart"]
+        else:
+            first_day = first_ticket.created
+        first_day = get_monday(first_day)
+
+        for id in self.tickets:
+            # figure out which week the ticket is in
+            delta: datetime = self.tickets[id].created - first_day
+            week: int = delta.days // 7
+            if week < 0 or week >= num_weeks:
+                continue
+            # add to the count of which week it's in
+            week_counts[week] += 1
+        
+        return week_counts
 
 # Helper functions
 
@@ -150,3 +190,27 @@ def check_fields(csv_ticket: dict) -> None:
             csv_ticket[field]
     except:
         print("Your ticket report does not follow standard tdxplot guidelines")
+
+def get_time_format(time_text: str):
+    """
+    Checks that time adheres to one of TIME_FORMATS.
+    Returns format string or throws error if no match.
+    """
+    time_text.strip()
+    for time_format in TIME_FORMATS:
+        try:
+            datetime.strptime(time_text, time_format)
+            return time_format
+        except:
+            continue
+    print(f"Time {time_text} not recognized, try yyyy-mm-dd hh:mm", file=sys.stderr)
+    exit(1)
+
+def get_monday(date: datetime):
+    """
+    Given datetime, return Monday midnight of that week.
+    """
+    date: datetime = datetime.combine(date, time(0, 0))
+    while datetime.weekday(date):
+        date -= timedelta(days=1)
+    return date

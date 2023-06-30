@@ -95,5 +95,7 @@ def main():
     org = Organization()
     org.populate(args)
 
+    print(org.per_week(args))
+
 if __name__ == "__main__":
     main()
