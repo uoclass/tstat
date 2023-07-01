@@ -16,7 +16,7 @@ import os
 import datetime
 
 # import files
-import presets
+from report import *
 from organization import *
 
 # constants
@@ -88,14 +88,19 @@ def main():
     if args.get("termstart"):
         args["termstart"] = check_date(args.get("termstart"))
 
-    # call plot tool
-    # presets.per_week(args) FIXME: Commenting out for jerry-rigged solution to year report
-    # presets.run_year_report(args)
-
+    report = Report(args["filename"])
     org = Organization()
-    org.populate(args)
+    report.populate(org)
 
-    print(org.per_week(args))
+    # FIXME should be if "the selected preset is tickets per week"
+    if True:
+        if "Created" in report.fields_present:
+            tickets_per_week = org.per_week(args)
+        else:
+            print("Cannot run a tickets-per-week analysis without Created field present in report", file=sys.stderr)
+            exit(1)
 
+    print(tickets_per_week)
+            
 if __name__ == "__main__":
     main()
