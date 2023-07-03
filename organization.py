@@ -146,16 +146,16 @@ tickets: {len(self.tickets)}"""
         self.buildings[name] = Building(name)
         return self.buildings[name]
     
-    def per_week(self, args: dict) -> list[int]:
+    def per_week(self, args) -> dict[int, int]:
         """
-        Return a list counting tickets per week.
-        This list can be used as input to graph the information.
+        Return a dict counting tickets per week number.
+        This dict can be used as input to graph the information.
         """
         # number of weeks
         num_weeks = args.get("weeks") if args.get("weeks") else DEFAULT_WEEKS
 
-        # list of the ticket counts per week
-        week_counts = [0] * num_weeks
+        # dict of the ticket counts per week
+        week_counts = {}
 
         # find start date
         first_day = None
@@ -180,7 +180,12 @@ tickets: {len(self.tickets)}"""
             week: int = delta.days // 7
             if week < 0 or week >= num_weeks:
                 continue
-            week_counts[week] += 1
+            # start counting with week 1
+            week += 1
+            if week_counts.get(week) != None:
+                week_counts[week] += 1
+            else:
+                week_counts[week] = 1
 
         # return list of ticket counts per week
         return week_counts
