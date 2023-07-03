@@ -63,13 +63,16 @@ def check_options(args: dict) -> None:
     """
     count: int = 0
     for key in args:
-        if key in ["perweek", "perbuilding"] and args[key]:
+        if key in ["perweek", "perbuilding", "perroom"] and args[key]:
             count += 1
         if count > 1:
             print("Pass exactly one query preset argument (e.g. --perweek)", file=sys.stderr)
             exit(1)
     if not count:
         print("No query preset argument passed (e.g. --perweek)", file=sys.stderr)
+        exit(1)
+    if args.get("perroom") and not args.get("building"):
+        print("No building specified, please specify a building for --perroom using --building [BUILDING_NAME].", file=sys.stderr)
         exit(1)
 
 def parser_setup():
@@ -82,9 +85,12 @@ def parser_setup():
     parser.add_argument("-c", "--color", choices=COLORS, help="Set the color of the plot.")
     parser.add_argument("-t", "--termstart", type=str, help="Set week 1 to week of given mm/dd/yyyy (otherwise first ticket date used)")
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term")
+    parser.add_argument("-b","--building", type=str, help="Specify building filter.")
     # flags for query presets
     parser.add_argument("--perweek", action="store_true", help="Show tickets per week")
     parser.add_argument("--perbuilding", action="store_true", help="Show tickets per building")
+    parser.add_argument("--perroom", action="store_true", help="Show tickets per room in a specified building.")
+    
     return parser
 
 def main():
@@ -107,15 +113,18 @@ def main():
     # halt if conflicting flags given
     check_options(args)
 
-    # ensure valid date format if term start given
-    if args.get("termstart"):
-        args["termstart"] = check_date(args.get("termstart"))
-
     # initialize report and organization
     report = Report(args["filename"])
     org = Organization()
     report.populate(org)
-
+    
+    # ensure valid date format if term start given
+    if args.get("termstart"):
+        args["termstart"] = check_date(args.get("termstart"))
+    
+    if args.get("building"):
+        args["building"] = org.find_building(args["building"])
+    
     if args.get("perweek"):
         if "Created" in report.fields_present:
             tickets_per_week = org.per_week(args)
@@ -132,7 +141,14 @@ def main():
         else:
             print("Cannot run a tickets-per-building query without Class Support Building field present in report", file=sys.stderr)
             exit(1)
-
+    if args.get("perroom"):
+        if "Class Support Building" in report.fields_present and "Room number" in report.fields_present:
+            tickets_per_room = org.per_room(args)
+            # FIXME
+            print(tickets_per_room)
+        else:
+            print("Cannot run a tickets-per-room query without Class Support Building and Room number field present in report", file=sys.stderr)
+            exit(1)
             
 if __name__ == "__main__":
     main()

@@ -78,7 +78,8 @@ tickets: {len(self.tickets)}"""
         new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"))
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
                                   ticket_dict.get("Room number"))
-        
+        new_ticket.room.tickets.append(new_ticket)
+
         # Add new ticket to organization's ticket dict
         self.tickets[new_ticket.id] = new_ticket
  
@@ -145,7 +146,7 @@ tickets: {len(self.tickets)}"""
         self.buildings[name] = Building(name)
         return self.buildings[name]
     
-    def per_week(self, args) -> list[int]:
+    def per_week(self, args: dict) -> list[int]:
         """
         Return a list counting tickets per week.
         This list can be used as input to graph the information.
@@ -184,7 +185,7 @@ tickets: {len(self.tickets)}"""
         # return list of ticket counts per week
         return week_counts
 
-    def per_building(self, args) -> dict[str, int]:
+    def per_building(self, args: dict) -> dict[str, int]:
         """
         Return a dict counting tickets per building.
         This dict can be used as input to graph the information.
@@ -209,6 +210,25 @@ tickets: {len(self.tickets)}"""
         # return dict of ticket counts per building
         return building_count
         
+    def per_room(self, args: dict) -> dict[str, int]:
+        """
+        Return a dict counting tickets per room within a given building.
+        This information is meant to be used as input for graphing purposes.
+        """
+        # dict for room  to room numbers
+        room_count: dict = {}
+        term_start: datetime = args.get("termstart")
+
+        for room_identifier in args["building"].rooms:
+            for ticket in args["building"].rooms[room_identifier].tickets:
+                if term_start and ticket.created and ticket.created > term_start:
+                    continue
+                elif room_count.get(args["building"].rooms[room_identifier]):  
+                    room_count[args["building"].rooms[room_identifier]] += 1
+                else:
+                    room_count[args["building"].rooms[room_identifier]] = 1
+        return room_count
+
 # Helper functions
 
 def get_monday(date: datetime):
