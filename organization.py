@@ -146,28 +146,38 @@ tickets: {len(self.tickets)}"""
         return self.buildings[name]
     
     def per_week(self, args) -> list[int]:
-        first_ticket = self.tickets[list(self.tickets.keys())[0]]
         # number of weeks
         num_weeks = args.get("weeks") if args.get("weeks") else DEFAULT_WEEKS
 
-        # list of the counts of tickets per week
+        # list of the ticket counts per week
         week_counts = [0] * num_weeks
 
+        # find start date
+        first_day = None
         if args.get("termstart"):
-            first_day = args["termstart"]
+            # start date provided
+            first_day: datetime = args["termstart"]
         else:
-            first_day = first_ticket.created
-        first_day = get_monday(first_day)
+            # find start date by earliest ticket
+            for id in self.tickets:
+                if not first_day:
+                    first_day: datetime = self.tickets[id].created
+                if self.tickets[id].created < first_day:
+                    first_day: datetime = self.tickets[id].created
 
+        # use the first day of the week
+        first_day = get_monday(first_day)
+        print(f"Using {first_day} as term start")
+
+        # sort tickets into week_counts
         for id in self.tickets:
-            # figure out which week the ticket is in
             delta: datetime = self.tickets[id].created - first_day
             week: int = delta.days // 7
             if week < 0 or week >= num_weeks:
                 continue
-            # add to the count of which week it's in
             week_counts[week] += 1
-        
+
+        # return list of ticket counts per week
         return week_counts
 
 # Helper functions
