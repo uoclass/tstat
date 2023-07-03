@@ -57,6 +57,21 @@ def check_date(date_text: str):
         exit(1)
     return date
 
+def check_options(args: dict) -> None:
+    """
+    Halt program if conflicting or missing flags given.
+    """
+    count: int = 0
+    for key in args:
+        if key in ["perweek", "perbuilding"] and args[key]:
+            count += 1
+        if count > 1:
+            print("Pass exactly one query preset argument (e.g. --perweek)", file=sys.stderr)
+            exit(1)
+    if not count:
+        print("No query preset argument passed (e.g. --perweek)", file=sys.stderr)
+        exit(1)
+
 def parser_setup():
     """
     Set up argument parser with needed arguments.
@@ -67,6 +82,9 @@ def parser_setup():
     parser.add_argument("-c", "--color", choices=COLORS, help="Set the color of the plot.")
     parser.add_argument("-t", "--termstart", type=str, help="Set week 1 to week of given mm/dd/yyyy (otherwise first ticket date used)")
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term")
+    # flags for query presets
+    parser.add_argument("--perweek", action="store_true", help="Show tickets per week")
+    parser.add_argument("--perbuilding", action="store_true", help="Show tickets per building")
     return parser
 
 def main():
@@ -79,28 +97,42 @@ def main():
     filename.strip()
     check_file(filename)
     
+    # set up parsers and parse into dict
     parser: argparse.ArgumentParser = parser_setup()
     args: dict = vars(parser.parse_args())
 
+    # set filename of arg dict
     args["filename"] = filename
 
-    # ensure valid date format
+    # halt if conflicting flags given
+    check_options(args)
+
+    # ensure valid date format if term start given
     if args.get("termstart"):
         args["termstart"] = check_date(args.get("termstart"))
 
+    # initialize report and organization
     report = Report(args["filename"])
     org = Organization()
     report.populate(org)
 
-    # FIXME should be if "the selected preset is tickets per week"
-    if True:
+    if args.get("perweek"):
         if "Created" in report.fields_present:
             tickets_per_week = org.per_week(args)
+            # FIXME
+            print(tickets_per_week)
         else:
-            print("Cannot run a tickets-per-week analysis without Created field present in report", file=sys.stderr)
+            print("Cannot run a tickets-per-week query without Created field present in report", file=sys.stderr)
+            exit(1)
+    if args.get("perbuilding"):
+        if "Class Support Building" in report.fields_present:
+            tickets_per_building = org.per_building(args)
+            # FIXME
+            print(tickets_per_building)
+        else:
+            print("Cannot run a tickets-per-building query without Class Support Building field present in report", file=sys.stderr)
             exit(1)
 
-    print(tickets_per_week)
             
 if __name__ == "__main__":
     main()

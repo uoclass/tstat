@@ -88,7 +88,7 @@ tickets: {len(self.tickets)}"""
         Otherwise add new group and return.
         """
         if not name:
-            name = "Other"
+            name = "Undefined"
         if self.groups.get(name):
             return self.groups[name] 
         self.groups[name] = Group(name)
@@ -100,7 +100,7 @@ tickets: {len(self.tickets)}"""
         Otherwise add new user with given info and return.
         """
         if not email:
-            email = "Other"
+            email = "Undefined"
         if self.users.get(email):
             return self.users[email]
         self.users[email] = User(email, name, phone)
@@ -112,7 +112,7 @@ tickets: {len(self.tickets)}"""
         Otherwise add new department and return.
         """
         if not name:
-            name = "Other"
+            name = "Undefined"
         if self.departments.get(name):
             return self.departments[name] 
         self.departments[name] = Department(name)
@@ -124,9 +124,9 @@ tickets: {len(self.tickets)}"""
         Otherwise add new room or building as needed and return.
         """
         if not building_name:
-            building_name = "Other"
+            building_name = "Undefined"
         if not room_identifier:
-            room_identifier = "Other"
+            room_identifier = "Undefined"
         building: Building = self.find_building(building_name)
         if building.rooms.get(room_identifier):
             return building.rooms[room_identifier]
@@ -139,13 +139,17 @@ tickets: {len(self.tickets)}"""
         Otherwise add new building and return.
         """
         if not name:
-            name = "Other"
+            name = "Undefined"
         if self.buildings.get(name):
             return self.buildings[name]
         self.buildings[name] = Building(name)
         return self.buildings[name]
     
     def per_week(self, args) -> list[int]:
+        """
+        Return a list counting tickets per week.
+        This list can be used as input to graph the information.
+        """
         # number of weeks
         num_weeks = args.get("weeks") if args.get("weeks") else DEFAULT_WEEKS
 
@@ -180,6 +184,31 @@ tickets: {len(self.tickets)}"""
         # return list of ticket counts per week
         return week_counts
 
+    def per_building(self, args) -> dict[str, int]:
+        """
+        Return a dict counting tickets per building.
+        This dict can be used as input to graph the information.
+        """
+        # dict for buildings
+        building_count: dict = {}
+
+        term_start: datetime = args.get("termstart")
+
+        for id in self.tickets:
+            # discard tickets before termstart
+            if term_start and self.tickets[id].created < term_start:
+                continue
+
+            # update building counts
+            current_building = self.tickets[id].room.building
+            if building_count.get(current_building) != None:
+               building_count[current_building] += 1
+            else:
+                building_count[current_building] = 1
+
+        # return dict of ticket counts per building
+        return building_count
+        
 # Helper functions
 
 def get_monday(date: datetime):
