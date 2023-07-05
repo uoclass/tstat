@@ -12,6 +12,7 @@ import os
 import sys
 from datetime import *
 import io
+from typing import Union
 
 # Files
 from ticketclasses import *
@@ -134,7 +135,7 @@ tickets: {len(self.tickets)}"""
         building.rooms[room_identifier] = Room(building, room_identifier)
         return building.rooms[room_identifier]
 
-    def find_building(self, name) -> Building:
+    def find_building(self, name: str) -> Building:
         """
         Return building with name if already exists.
         Otherwise add new building and return.
@@ -146,37 +147,40 @@ tickets: {len(self.tickets)}"""
         self.buildings[name] = Building(name)
         return self.buildings[name]
     
-    def per_week(self, args) -> dict[int, int]:
+    def per_week(self, args: dict) -> dict[int, int]:
         """
         Return a dict counting tickets per week number.
         This dict can be used as input to graph the information.
         """
         # number of weeks
-        num_weeks = args.get("weeks") if args.get("weeks") else DEFAULT_WEEKS
+        num_weeks: int = args.get("weeks") if args.get("weeks") else DEFAULT_WEEKS
 
         # dict of the ticket counts per week
-        week_counts = {}
+        week_counts: dict[int, int] = {}
 
         # find start date
-        first_day = None
+        term_start = None
         if args.get("termstart"):
             # start date provided
-            first_day: datetime = args["termstart"]
+            term_start: datetime = args["termstart"]
         else:
             # find start date by earliest ticket
             for id in self.tickets:
-                if not first_day:
-                    first_day: datetime = self.tickets[id].created
-                if self.tickets[id].created < first_day:
-                    first_day: datetime = self.tickets[id].created
+                if not term_start:
+                    term_start: datetime = self.tickets[id].created
+                if self.tickets[id].created < term_start:
+                    term_start: datetime = self.tickets[id].created
 
         # use the first day of the week
-        first_day = get_monday(first_day)
-        print(f"Using {first_day} as term start")
+        term_start = get_monday(term_start)
+        print(f"Using {term_start} as term start")
+
+        # apply filtering AFTER term start decided
+        filtered_tickets = filter_tickets(self.tickets, args, ["termstart"])
 
         # sort tickets into week_counts
-        for id in self.tickets:
-            delta: datetime = self.tickets[id].created - first_day
+        for ticket in filtered_tickets:
+            delta: datetime = ticket.created - term_start
             week: int = delta.days // 7
             if week < 0 or week >= num_weeks:
                 continue
@@ -196,24 +200,22 @@ tickets: {len(self.tickets)}"""
         This dict can be used as input to graph the information.
         """
         # dict for buildings
-        building_count: dict = {}
+        building_count: dict[Building, int] = {}
 
-        term_start: datetime = args.get("termstart")
+        # run filtering and count on each room
+        for building_name in self.buildings:
+            building = self.buildings[building_name]
+            for room_identifier in building.rooms:
+                room = building.rooms[room_identifier]
+                # add building to the dict if not already included
+                if building_count.get(building) != None:
+                    building_count[building] += len(filter_tickets(room.tickets, args))
+                else:
+                    building_count[building] = len(filter_tickets(room.tickets, args))
 
-        for id in self.tickets:
-            # discard tickets before termstart
-            if term_start and self.tickets[id].created < term_start:
-                continue
-
-            # update building counts
-            current_building = self.tickets[id].room.building
-            if building_count.get(current_building) != None:
-               building_count[current_building] += 1
-            else:
-                building_count[current_building] = 1
-
-        # return dict of ticket counts per building
+        # return dict of counts per building
         return building_count
+
         
     def per_room(self, args: dict) -> dict[str, int]:
         """
@@ -221,17 +223,17 @@ tickets: {len(self.tickets)}"""
         This information is meant to be used as input for graphing purposes.
         """
         # dict for room  to room numbers
-        room_count: dict = {}
-        term_start: datetime = args.get("termstart")
+        room_count: dict[Room, int] = {}
 
-        for room_identifier in args["building"].rooms:
-            for ticket in args["building"].rooms[room_identifier].tickets:
-                if term_start and ticket.created and ticket.created > term_start:
-                    continue
-                elif room_count.get(args["building"].rooms[room_identifier]):  
-                    room_count[args["building"].rooms[room_identifier]] += 1
-                else:
-                    room_count[args["building"].rooms[room_identifier]] = 1
+        # ensure we have a building and not empty/None
+        building: Building = args.get("building")
+        assert type(building) == Building
+
+        for room_identifer in building.rooms:
+            room = building.rooms[room_identifer]
+            room_count[room] = len(filter_tickets(room.tickets, args, ["building"]))
+    
+        # return dict of counts per room
         return room_count
 
 # Helper functions
@@ -244,3 +246,24 @@ def get_monday(date: datetime):
     while datetime.weekday(date):
         date -= timedelta(days=1)
     return date
+
+def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
+                   args: dict,
+                   exclude: list[str] = []) -> list[Ticket]:
+    """
+    Given an iterable (list or dict) of Tickets and args with filters,
+    And an (optional) list of filters from args to exclude,
+    Return a list containing only tickets that pass all filters.
+    """
+    if type(tickets) == dict:
+        tickets = tickets.values()
+    term_start: datetime = None if "termstart" in exclude else args.get("termstart")
+    building: Building = None if "building" in exclude else args.get("building")
+    filtered: list[Ticket] = []
+    for ticket in tickets:
+        if building and ticket.room.building != building:
+            continue
+        if term_start and ticket.created < term_start:
+            continue
+        filtered.append(ticket)
+    return filtered
