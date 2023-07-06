@@ -158,61 +158,62 @@ tickets: {len(self.tickets)}"""
             return self.buildings[name]
         return None
     
-    def per_week(self, args: dict) -> dict[int, int]:
+    def per_week(self, args: dict) -> dict[datetime, int]:
         """
         Return a dict counting tickets per week number.
         This dict can be used as input to graph the information.
         """
-        # find start date
-        term_start = None
+        # find first week
+        first_week = None
         if args.get("termstart"):
             # start date provided
-            term_start: datetime = args["termstart"]
+            first_week: datetime = args["termstart"]
         else:
-            # find start date by earliest ticket
+            # find first week by earliest ticket
             for id in self.tickets:
-                if not term_start:
-                    term_start: datetime = self.tickets[id].created
-                if self.tickets[id].created < term_start:
-                    term_start: datetime = self.tickets[id].created
-
+                if not first_week:
+                    first_week: datetime = self.tickets[id].created
+                if self.tickets[id].created < first_week:
+                    first_week: datetime = self.tickets[id].created
         # use the first day of the week
-        term_start = get_monday(term_start)
-        print(f"Using {term_start} as term start")
+        first_week = get_monday(first_week)
+        print(f"Using {first_week} as first week")
 
-        # number of weeks
-        if args.get("weeks") != None:
-            # given by user
-            if args["weeks"] == 0:
+        # find last week
+        last_week = None
+        if args.get("weeks") == 0:
                 print("Cannot pass --weeks 0, use at least 1 week", file=sys.stderr)
                 exit(1)
-            num_weeks: int = args["weeks"]
+        elif args.get("weeks"):
+            # number of weeks provided
+            last_week: datetime = first_week + (args["weeks"]-1)*timedelta(days = 7)
         elif args.get("termend"):
-            # calculate from --termend input
-            end_delta: datetime = args["termend"] - term_start
+            # termend input provided
+            end_delta: datetime = args["termend"] - first_week
             num_weeks: int = 1 + (end_delta.days // 7)
+            last_week: datetime = get_monday(args["termend"])
             print(f"Using {num_weeks}-week term based on given end date")
         else:
-            # use default if none given
+            # none given
             print(f"Using default {DEFAULT_WEEKS}-week term")
-            num_weeks: int = DEFAULT_WEEKS
+            last_week: datetime = first_week + (DEFAULT_WEEKS-1)*timedelta(days = 7)
 
         # dict of the ticket counts per week
-        week_counts: dict[int, int] = {}
-        for i in range(1, num_weeks+1):
-            week_counts[i] = 0
+        week_counts: dict[datetime, int] = {}
+        week_i: datetime = first_week
+        while week_i <= last_week:
+            week_counts[week_i] = 0
+            week_i += timedelta(days = 7)
 
         # apply filtering AFTER term start decided
         filtered_tickets = filter_tickets(self.tickets, args, ["termstart", "termend"])
 
         # sort tickets into week_counts
         for ticket in filtered_tickets:
-            delta: datetime = ticket.created - term_start
-            week: int = delta.days // 7
-            if week < 0 or week >= num_weeks:
-                continue
-            # start counting with week 1
-            week_counts[week+1] += 1
+            ticket_week = get_monday(ticket.created)
+            if ticket_week >= first_week and ticket_week <= last_week:
+                # start counting with week 1
+                week_counts[ticket_week] += 1
 
         # return list of ticket counts per week
         return week_counts
