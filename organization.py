@@ -172,6 +172,8 @@ tickets: {len(self.tickets)}"""
 
         # dict of the ticket counts per week
         week_counts: dict[int, int] = {}
+        for i in range(1, num_weeks+1):
+            week_counts[i] = 0
 
         # find start date
         term_start = None
@@ -200,11 +202,7 @@ tickets: {len(self.tickets)}"""
             if week < 0 or week >= num_weeks:
                 continue
             # start counting with week 1
-            week += 1
-            if week_counts.get(week) != None:
-                week_counts[week] += 1
-            else:
-                week_counts[week] = 1
+            week_counts[week+1] += 1
 
         # return list of ticket counts per week
         return week_counts
