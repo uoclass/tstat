@@ -163,18 +163,6 @@ tickets: {len(self.tickets)}"""
         Return a dict counting tickets per week number.
         This dict can be used as input to graph the information.
         """
-        # number of weeks
-        if args.get("weeks"):
-            num_weeks: int = args["weeks"]
-        else:
-            print(f"Using default {DEFAULT_WEEKS}-week term")
-            num_weeks: int = DEFAULT_WEEKS
-
-        # dict of the ticket counts per week
-        week_counts: dict[int, int] = {}
-        for i in range(1, num_weeks+1):
-            week_counts[i] = 0
-
         # find start date
         term_start = None
         if args.get("termstart"):
@@ -192,8 +180,30 @@ tickets: {len(self.tickets)}"""
         term_start = get_monday(term_start)
         print(f"Using {term_start} as term start")
 
+        # number of weeks
+        if args.get("weeks") != None:
+            # given by user
+            if args["weeks"] == 0:
+                print("Cannot pass --weeks 0, use at least 1 week", file=sys.stderr)
+                exit(1)
+            num_weeks: int = args["weeks"]
+        elif args.get("termend"):
+            # calculate from --termend input
+            end_delta: datetime = args["termend"] - term_start
+            num_weeks: int = 1 + (end_delta.days // 7)
+            print(f"Using {num_weeks}-week term based on given end date")
+        else:
+            # use default if none given
+            print(f"Using default {DEFAULT_WEEKS}-week term")
+            num_weeks: int = DEFAULT_WEEKS
+
+        # dict of the ticket counts per week
+        week_counts: dict[int, int] = {}
+        for i in range(1, num_weeks+1):
+            week_counts[i] = 0
+
         # apply filtering AFTER term start decided
-        filtered_tickets = filter_tickets(self.tickets, args, ["termstart"])
+        filtered_tickets = filter_tickets(self.tickets, args, ["termstart", "termend"])
 
         # sort tickets into week_counts
         for ticket in filtered_tickets:
@@ -268,12 +278,15 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     if type(tickets) == dict:
         tickets = tickets.values()
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
+    term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
     filtered: list[Ticket] = []
     for ticket in tickets:
         if building and ticket.room.building != building:
             continue
         if term_start and ticket.created < term_start:
+            continue
+        if term_end and ticket.created > term_end:
             continue
         filtered.append(ticket)
     return filtered

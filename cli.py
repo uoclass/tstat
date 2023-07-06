@@ -83,18 +83,29 @@ def check_options(args: dict) -> None:
         print("Cannot filter to a single building in in a --perbuilding query", file=sys.stderr)
         exit(1)
 
+    # Stipulations for --perweek
+    if not args.get("perweek") and args.get("weeks") != None:
+        print("Cannot pass --weeks without --perweek", file=sys.stderr)
+        exit(1)
+    if args.get("weeks") and args.get("termend"):
+        print("Cannot pass --weeks and --termend simultaneously", file=sys.stderr)
+        exit(1)
+
 def parser_setup():
     """
     Set up argument parser with needed arguments.
     Return the parser.
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    # display customization
     parser.add_argument("-n", "--name", type=str, help="Set the name of the plot.")
     parser.add_argument("-c", "--color", choices=COLORS, help="Set the color of the plot.")
-    parser.add_argument("-t", "--termstart", type=str, help="Set week 1 to week of given mm/dd/yyyy (otherwise first ticket date used)")
-    parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term")
-    parser.add_argument("-b","--building", type=str, help="Specify building filter.")
-    # flags for query presets
+    # filters
+    parser.add_argument("-t", "--termstart", type=str, help="Exclude tickets before this date (calendar week for --perweek)")
+    parser.add_argument("-e", "--termend", type=str, help="Exclude tickets after this date (calendar week for --perweek)")
+    parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term for --perweek")
+    parser.add_argument("-b", "--building", type=str, help="Specify building filter.")
+    # query presets
     parser.add_argument("--perweek", action="store_true", help="Show tickets per week")
     parser.add_argument("--perbuilding", action="store_true", help="Show tickets per building")
     parser.add_argument("--perroom", action="store_true", help="Show tickets per room in a specified building.")
@@ -126,9 +137,11 @@ def main():
     org = Organization()
     report.populate(org)
     
-    # ensure valid date format if term start given
+    # ensure valid date formats
     if args.get("termstart"):
-        args["termstart"] = check_date(args.get("termstart"))
+        args["termstart"] = check_date(args["termstart"])
+    if args.get("termend"):
+        args["termend"] = check_date(args["termend"])
     
     if args.get("building"):
         args["building"] = org.find_building(args["building"])
