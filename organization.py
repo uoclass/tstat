@@ -72,19 +72,19 @@ tickets: {len(self.tickets)}"""
         new_ticket.modified = ticket_dict.get("Modified")
 
         # use find methods set these attributes
-        new_ticket.responsible = self.find_group(ticket_dict.get("Resp Group"))
+        new_ticket.responsible = self.find_group(ticket_dict.get("Resp Group"), True)
         new_ticket.requestor = self.find_user(ticket_dict.get("Requestor"),
                                        ticket_dict.get("Requestor Email"),
-                                       ticket_dict.get("Requestor Phone"))
-        new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"))
+                                       ticket_dict.get("Requestor Phone"), True)
+        new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), True)
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
-                                  ticket_dict.get("Room number"))
+                                  ticket_dict.get("Room number"), True)
         new_ticket.room.tickets.append(new_ticket)
 
         # Add new ticket to organization's ticket dict
         self.tickets[new_ticket.id] = new_ticket
  
-    def find_group(self, name: str) -> Group:
+    def find_group(self, name: str, create_mode: bool = False) -> Group:
         """
         Return group with name if already exists.
         Otherwise add new group and return.
@@ -93,10 +93,12 @@ tickets: {len(self.tickets)}"""
             name = "Undefined"
         if self.groups.get(name):
             return self.groups[name] 
-        self.groups[name] = Group(name)
-        return self.groups[name]
+        if create_mode:
+            self.groups[name] = Group(name)
+            return self.groups[name]
+        return None
 
-    def find_user(self, email: str, name: str, phone: str) -> User:
+    def find_user(self, email: str, name: str, phone: str, create_mode: bool = False) -> User:
         """
         Return user with given email if already exists.
         Otherwise add new user with given info and return.
@@ -105,10 +107,12 @@ tickets: {len(self.tickets)}"""
             email = "Undefined"
         if self.users.get(email):
             return self.users[email]
-        self.users[email] = User(email, name, phone)
-        return self.users[email]
+        if create_mode:
+            self.users[email] = User(email, name, phone)
+            return self.users[email]
+        return None
 
-    def find_department(self, name: str) -> Department:
+    def find_department(self, name: str, create_mode: bool = False) -> Department:
         """
         Return department with name if already exists.
         Otherwise add new department and return.
@@ -117,10 +121,12 @@ tickets: {len(self.tickets)}"""
             name = "Undefined"
         if self.departments.get(name):
             return self.departments[name] 
-        self.departments[name] = Department(name)
-        return self.departments[name]
+        if create_mode:
+            self.departments[name] = Department(name)
+            return self.departments[name]
+        return None
 
-    def find_room(self, building_name: str, room_identifier: str) -> Room:
+    def find_room(self, building_name: str, room_identifier: str, create_mode: bool = False) -> Room:
         """
         Return room with building name and identifier if already exists.
         Otherwise add new room or building as needed and return.
@@ -129,23 +135,28 @@ tickets: {len(self.tickets)}"""
             building_name = "Undefined"
         if not room_identifier:
             room_identifier = "Undefined"
-        building: Building = self.find_building(building_name)
-        if building.rooms.get(room_identifier):
-            return building.rooms[room_identifier]
-        building.rooms[room_identifier] = Room(building, room_identifier)
-        return building.rooms[room_identifier]
+        building: Building = self.find_building(building_name, create_mode)
+        if building:
+            if building.rooms.get(room_identifier):
+                return building.rooms[room_identifier]
+            if create_mode:
+                building.rooms[room_identifier] = Room(building, room_identifier)
+                return building.rooms[room_identifier]
+        return None
 
-    def find_building(self, name: str) -> Building:
+    def find_building(self, name: str, create_mode: bool = False) -> Building:
         """
         Return building with name if already exists.
-        Otherwise add new building and return.
+        If create_mode, return a new building if none found.
         """
         if not name:
             name = "Undefined"
         if self.buildings.get(name):
             return self.buildings[name]
-        self.buildings[name] = Building(name)
-        return self.buildings[name]
+        if create_mode:
+            self.buildings[name] = Building(name)
+            return self.buildings[name]
+        return None
     
     def per_week(self, args: dict) -> dict[int, int]:
         """
@@ -153,7 +164,11 @@ tickets: {len(self.tickets)}"""
         This dict can be used as input to graph the information.
         """
         # number of weeks
-        num_weeks: int = args.get("weeks") if args.get("weeks") else DEFAULT_WEEKS
+        if args.get("weeks"):
+            num_weeks: int = args["weeks"]
+        else:
+            print(f"Using default {DEFAULT_WEEKS}-week term")
+            num_weeks: int = DEFAULT_WEEKS
 
         # dict of the ticket counts per week
         week_counts: dict[int, int] = {}
@@ -205,13 +220,10 @@ tickets: {len(self.tickets)}"""
         # run filtering and count on each room
         for building_name in self.buildings:
             building = self.buildings[building_name]
+            building_count[building] = 0
             for room_identifier in building.rooms:
                 room = building.rooms[room_identifier]
-                # add building to the dict if not already included
-                if building_count.get(building) != None:
-                    building_count[building] += len(filter_tickets(room.tickets, args))
-                else:
-                    building_count[building] = len(filter_tickets(room.tickets, args))
+                building_count[building] += len(filter_tickets(room.tickets, args))
 
         # return dict of counts per building
         return building_count
@@ -229,8 +241,8 @@ tickets: {len(self.tickets)}"""
         building: Building = args.get("building")
         assert type(building) == Building
 
-        for room_identifer in building.rooms:
-            room = building.rooms[room_identifer]
+        for room_identifier in building.rooms:
+            room = building.rooms[room_identifier]
             room_count[room] = len(filter_tickets(room.tickets, args, ["building"]))
     
         # return dict of counts per room

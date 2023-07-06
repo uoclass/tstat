@@ -61,6 +61,7 @@ def check_options(args: dict) -> None:
     """
     Halt program if conflicting or missing flags given.
     """
+    # Allow only one query type
     count: int = 0
     for key in args:
         if key in ["perweek", "perbuilding", "perroom"] and args[key]:
@@ -71,8 +72,15 @@ def check_options(args: dict) -> None:
     if not count:
         print("No query preset argument passed (e.g. --perweek)", file=sys.stderr)
         exit(1)
+
+    # Stipulations for --perroom
     if args.get("perroom") and not args.get("building"):
         print("No building specified, please specify a building for --perroom using --building [BUILDING_NAME].", file=sys.stderr)
+        exit(1)
+
+    # Stipulations for --perbuilding
+    if args.get("perbuilding") and args.get("building"):
+        print("Cannot filter to a single building in in a --perbuilding query", file=sys.stderr)
         exit(1)
 
 def parser_setup():
@@ -124,6 +132,9 @@ def main():
     
     if args.get("building"):
         args["building"] = org.find_building(args["building"])
+        if not args["building"]:
+            print("No such building found in report", file=sys.stderr)
+            exit(1)
     
     if args.get("perweek"):
         if "Created" in report.fields_present:
