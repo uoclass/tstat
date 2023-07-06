@@ -18,6 +18,7 @@ import datetime
 # import files
 from report import *
 from organization import *
+from visual import *
 
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"] 
@@ -149,11 +150,11 @@ def main():
             print("No such building found in report", file=sys.stderr)
             exit(1)
     
+    # ensure report matches requirements for query
     if args.get("perweek"):
         if "Created" in report.fields_present:
             tickets_per_week = org.per_week(args)
-            # FIXME
-            print(tickets_per_week)
+            view_per_week(tickets_per_week, args)
         else:
             print("Cannot run a tickets-per-week query without Created field present in report", file=sys.stderr)
             exit(1)
