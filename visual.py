@@ -12,6 +12,12 @@ from datetime import *
 import io
 from matplotlib import pyplot
 
+# constants
+DEFAULT_COLOR = "gray"
+DEFAULT_NAMES = {"perweek": "Tickets per Week",
+                 "perbuilding": "Tickets per Building",
+                 "perroom": "Tickets per Room"}
+
 def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
     """
     Display graph showing ticket counts per week.
@@ -28,22 +34,28 @@ def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
             label += f"""\n{datetime.strftime(weeks[i], "%Y")}"""
         week_labels.append(label)
 
+    bar_view(week_labels, week_counts, args)
+
+
+def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
+    """
+    Display a bar chart using given bar labels and bar heights.
+    Applies cosmetic changes from args.
+    """
     # initialize the graph
     fig, ax = pyplot.subplots(figsize=(10, 5))
-    if args.get("color"):
-        ax.bar(week_labels, week_counts, color=args.get("color"))
-    else:
-        ax.bar(week_labels, week_counts, color="green")
+    color: str = args["color"] if args.get("color") else DEFAULT_COLOR
+    ax.bar(bar_labels, bar_heights, color=args.get("color"))
 
     # pyplot.xlabel("Weeks") # removed cause each bar is labeled Week (num)
     ax.set_ylabel("Count")
     if args.get("name"):
-        ax.set_title(args.get("name"))
+        ax.set_title(args["name"])
     else:
-        ax.set_title("Number of Tickets Per Week")
+        ax.set_title(DEFAULT_NAMES[args["querytype"]])
 
     rect = ax.patches
-    for rect, c in zip(rect, week_counts):
+    for rect, c in zip(rect, bar_heights):
         # add the count to the graph
         height = rect.get_height()
         ax.text(
