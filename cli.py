@@ -176,14 +176,13 @@ def main():
     # initialize report
     report = Report(args["filename"])
 
+    # check correct info present for query
+    check_report(args, report)
+
     # populate organization
     org = Organization()
     report.populate(org)
 
-    # FIXME refactor setting report fields to constructor, put me before previous block
-    # check correct info present for query
-    check_report(args, report)
-    
     # clean up args dict with correct object types
     clean_args(args, org)
 

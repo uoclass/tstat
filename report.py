@@ -37,6 +37,12 @@ class Report:
 
     def __init__(self, filename: str):
         self.filename = filename
+        # set fields present and time format
+        csv_file: io.TextIOWrapper = open(self.filename, mode="r", encoding="utf-8-sig")
+        any_ticket: dict = next(csv.DictReader(csv_file))
+        self.set_fields_present(any_ticket)
+        self.set_time_format(any_ticket)
+        csv_file.close()
 
     def populate(self, org: Organization) -> None:
         """
@@ -47,10 +53,6 @@ class Report:
         csv_tickets: csv.DictReader = csv.DictReader(csv_file)
         count: int = 0
         for row in csv_tickets:
-            if not count:
-                # on first run, check time format and fields
-                self.set_fields_present(row)
-                self.set_time_format(row)
             # fix row to be a valid, clean ticket dict
             self.clean_ticket_dict(row)
             org.add_new_ticket(row)
