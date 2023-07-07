@@ -173,10 +173,8 @@ def main():
     set_query_type(args)
     check_options(args)
 
-    # initialize report
+    # check report has enough info for query
     report = Report(args["filename"])
-
-    # check correct info present for query
     check_report(args, report)
 
     # populate organization
@@ -193,10 +191,10 @@ def main():
             view_per_week(tickets_per_week, args)
     if query_type == "perbuilding":
             tickets_per_building = org.per_building(args)
-            print(tickets_per_building)
+            view_per_building(tickets_per_building, args)
     if query_type == "perroom":
             tickets_per_room = org.per_room(args)
-            print(tickets_per_room)
+            view_per_room(tickets_per_room, args)
             
 if __name__ == "__main__":
     main()

@@ -20,7 +20,7 @@ DEFAULT_NAMES = {"perweek": "Tickets per Week",
 
 def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
     """
-    Display graph showing ticket counts per week.
+    Display bar chart showing ticket counts per week.
     """
     # sort keys
     weeks: list[datetime] = list(tickets_per_week.keys())
@@ -36,6 +36,33 @@ def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
 
     bar_view(week_labels, week_counts, args)
 
+def view_per_building(tickets_per_building: dict["Building", int], args: dict) -> None:
+    """
+    Display bar chart showing ticket counts per building.
+    """
+    building_labels: list[str] = []
+    building_counts: list[int] = []
+    sorted_counts = sorted(tickets_per_building.items(), key=lambda item: item[1])
+    for building, count in sorted_counts:
+        building_labels.append(building.name)
+        building_counts.append(count)
+
+    bar_view(building_labels, building_counts, args)
+
+
+def view_per_room(tickets_per_room: dict["Room", int], args: dict) -> None:
+    """
+    Display bar chart showing ticket counts per room.
+    """
+    room_labels: list[str] = []
+    room_counts: list[int] = []
+    sorted_counts = sorted(tickets_per_room.items(), key=lambda item: item[1])
+    for room, count in sorted_counts:
+        room_label = f"{room.building.name} {room.identifier}"
+        room_labels.append(room_label)
+        room_counts.append(count)
+
+    bar_view(room_labels, room_counts, args)
 
 def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
     """
@@ -67,5 +94,11 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
             color = "Black",
             fontsize = "medium"
         )
+
+    if args["querytype"] in ["perbuilding", "perroom"]:
+        # adjust for long building names
+        # FIXME take in building name abbreviations
+        pyplot.xticks(rotation=45, ha='right')
+        pyplot.subplots_adjust(bottom=0.25)
 
     pyplot.show()
