@@ -73,9 +73,9 @@ tickets: {len(self.tickets)}"""
 
         # use find methods set these attributes
         new_ticket.responsible = self.find_group(ticket_dict.get("Resp Group"), True)
-        new_ticket.requestor = self.find_user(ticket_dict.get("Requestor"),
-                                       ticket_dict.get("Requestor Email"),
-                                       ticket_dict.get("Requestor Phone"), True)
+        new_ticket.requestor = self.find_user(ticket_dict.get("Requestor Email"),
+                                              ticket_dict.get("Requestor"),
+                                              ticket_dict.get("Requestor Phone"), True)
         new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), True)
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
                                   ticket_dict.get("Room number"), True)
