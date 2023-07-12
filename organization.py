@@ -72,25 +72,24 @@ tickets: {len(self.tickets)}"""
         new_ticket.modified = ticket_dict.get("Modified")
 
         # use find methods set these attributes
-        new_ticket.responsible = self.find_group(ticket_dict.get("Resp Group"), True)
+        new_ticket.responsible = self.find_group(ticket_dict.get("Resp Group"), create_mode=True)
         new_ticket.requestor = self.find_user(ticket_dict.get("Requestor Email"),
                                               ticket_dict.get("Requestor"),
-                                              ticket_dict.get("Requestor Phone"), True)
-        new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), True)
+                                              ticket_dict.get("Requestor Phone"), create_mode=True)
+        new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), create_mode=True)
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
-                                  ticket_dict.get("Room number"), True)
+                                  ticket_dict.get("Room number"), create_mode=True)
         new_ticket.room.tickets.append(new_ticket)
 
         # Add new ticket to organization's ticket dict
         self.tickets[new_ticket.id] = new_ticket
  
-    def find_group(self, name: str, create_mode: bool = False) -> Group:
+    def find_group(self, name: str = "Undefined", create_mode: bool = False) -> Group:
         """
         Return group with name if already exists.
         Otherwise add new group and return.
         """
-        if not name:
-            name = "Undefined"
+        name = name if name else "Undefined"
         if self.groups.get(name):
             return self.groups[name] 
         if create_mode:
@@ -98,13 +97,17 @@ tickets: {len(self.tickets)}"""
             return self.groups[name]
         return None
 
-    def find_user(self, email: str, name: str, phone: str, create_mode: bool = False) -> User:
+    def find_user(self, email: str = "Undefined",
+                  name: str = "Undefined",
+                  phone: str = "Undefined",
+                  create_mode: bool = False) -> User:
         """
         Return user with given email if already exists.
         Otherwise add new user with given info and return.
         """
-        if not email:
-            email = "Undefined"
+        email = email if email else "Undefined"
+        name = name if name else "Undefined"
+        phone = phone if phone else "Undefined"
         if self.users.get(email):
             return self.users[email]
         if create_mode:
@@ -112,13 +115,12 @@ tickets: {len(self.tickets)}"""
             return self.users[email]
         return None
 
-    def find_department(self, name: str, create_mode: bool = False) -> Department:
+    def find_department(self, name: str = "Undefined", create_mode: bool = False) -> Department:
         """
         Return department with name if already exists.
         Otherwise add new department and return.
         """
-        if not name:
-            name = "Undefined"
+        name = name if name else "Undefined"
         if self.departments.get(name):
             return self.departments[name] 
         if create_mode:
@@ -126,15 +128,15 @@ tickets: {len(self.tickets)}"""
             return self.departments[name]
         return None
 
-    def find_room(self, building_name: str, room_identifier: str, create_mode: bool = False) -> Room:
+    def find_room(self, building_name: str = "Undefined",
+                  room_identifier: str = "Undefined",
+                  create_mode: bool = False) -> Room:
         """
         Return room with building name and identifier if already exists.
         Otherwise add new room or building as needed and return.
         """
-        if not building_name:
-            building_name = "Undefined"
-        if not room_identifier:
-            room_identifier = "Undefined"
+        building_name = building_name if building_name else "Undefined"
+        room_identifier = room_identifier if room_identifier else "Undefined"
         building: Building = self.find_building(building_name, create_mode)
         if building:
             if building.rooms.get(room_identifier):
@@ -144,13 +146,12 @@ tickets: {len(self.tickets)}"""
                 return building.rooms[room_identifier]
         return None
 
-    def find_building(self, name: str, create_mode: bool = False) -> Building:
+    def find_building(self, name: str = "Undefined", create_mode: bool = False) -> Building:
         """
         Return building with name if already exists.
         If create_mode, return a new building if none found.
         """
-        if not name:
-            name = "Undefined"
+        name = name if name else "Undefined"
         if self.buildings.get(name):
             return self.buildings[name]
         if create_mode:
