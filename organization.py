@@ -20,6 +20,7 @@ from ticketclasses import *
 # Constants
 DEFAULT_WEEKS = 11
 
+
 class Organization:
     """
     Class representing the internal workings of an organization.
@@ -37,7 +38,7 @@ class Organization:
         self.departments = {}
         self.groups = {}
         self.tickets = {}
-    
+
     def __str__(self) -> str:
         return f"""buildings: {len(self.buildings)} 
 users: {len(self.users)}
@@ -58,9 +59,8 @@ tickets: {len(self.tickets)}"""
             assert type(ticket_dict["ID"]) == int
             assert type(ticket_dict.get("Created")) != str
             assert type(ticket_dict.get("Modified")) != str
-        except:
-            print("Organization.add_new_ticket() received invalid ticket dict", file=sys.stderr)
-            exit(1)
+        except AssertionError:
+            raise ValueError("Organization.add_new_ticket() received invalid ticket dict")
 
         # create new ticket
         new_ticket: Ticket = Ticket()
@@ -78,12 +78,12 @@ tickets: {len(self.tickets)}"""
                                               ticket_dict.get("Requestor Phone"), create_mode=True)
         new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), create_mode=True)
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
-                                  ticket_dict.get("Room number"), create_mode=True)
+                                         ticket_dict.get("Room number"), create_mode=True)
         new_ticket.room.tickets.append(new_ticket)
 
         # Add new ticket to organization's ticket dict
         self.tickets[new_ticket.id] = new_ticket
- 
+
     def find_group(self, name: str = "Undefined", create_mode: bool = False) -> Group:
         """
         Return group with name if already exists.
@@ -91,7 +91,7 @@ tickets: {len(self.tickets)}"""
         """
         name = name if name else "Undefined"
         if self.groups.get(name):
-            return self.groups[name] 
+            return self.groups[name]
         if create_mode:
             self.groups[name] = Group(name)
             return self.groups[name]
@@ -122,7 +122,7 @@ tickets: {len(self.tickets)}"""
         """
         name = name if name else "Undefined"
         if self.departments.get(name):
-            return self.departments[name] 
+            return self.departments[name]
         if create_mode:
             self.departments[name] = Department(name)
             return self.departments[name]
@@ -158,7 +158,7 @@ tickets: {len(self.tickets)}"""
             self.buildings[name] = Building(name)
             return self.buildings[name]
         return None
-    
+
     def per_week(self, args: dict) -> dict[datetime, int]:
         """
         Return a dict counting tickets per week number.
@@ -182,12 +182,9 @@ tickets: {len(self.tickets)}"""
 
         # find last week
         last_week = None
-        if args.get("weeks") == 0:
-                print("Cannot pass --weeks 0, use at least 1 week", file=sys.stderr)
-                exit(1)
-        elif args.get("weeks"):
+        if args.get("weeks"):
             # number of weeks provided
-            last_week: datetime = first_week + (args["weeks"]-1)*timedelta(days = 7)
+            last_week: datetime = first_week + (args["weeks"] - 1) * timedelta(days=7)
         elif args.get("termend"):
             # termend input provided
             end_delta: datetime = args["termend"] - first_week
@@ -197,14 +194,14 @@ tickets: {len(self.tickets)}"""
         else:
             # none given
             print(f"Using default {DEFAULT_WEEKS}-week term")
-            last_week: datetime = first_week + (DEFAULT_WEEKS-1)*timedelta(days = 7)
+            last_week: datetime = first_week + (DEFAULT_WEEKS - 1) * timedelta(days=7)
 
         # dict of the ticket counts per week
         week_counts: dict[datetime, int] = {}
         week_i: datetime = first_week
         while week_i <= last_week:
             week_counts[week_i] = 0
-            week_i += timedelta(days = 7)
+            week_i += timedelta(days=7)
 
         # apply filtering AFTER term start decided
         filtered_tickets = filter_tickets(self.tickets, args, ["termstart", "termend"])
@@ -238,7 +235,6 @@ tickets: {len(self.tickets)}"""
         # return dict of counts per building
         return building_count
 
-        
     def per_room(self, args: dict) -> dict[str, int]:
         """
         Return a dict counting tickets per room within a given building.
@@ -254,9 +250,10 @@ tickets: {len(self.tickets)}"""
         for room_identifier in building.rooms:
             room = building.rooms[room_identifier]
             room_count[room] = len(filter_tickets(room.tickets, args, ["building"]))
-    
+
         # return dict of counts per room
         return room_count
+
 
 # Helper functions
 
@@ -268,6 +265,7 @@ def get_monday(date: datetime):
     while datetime.weekday(date):
         date -= timedelta(days=1)
     return date
+
 
 def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
                    args: dict,

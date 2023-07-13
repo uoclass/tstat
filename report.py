@@ -13,12 +13,15 @@ import csv
 import os
 import sys
 import io
+import typing
 
 # Files
 from organization import *
 
+
 # Constants
-STANDARD_FIELDS = ["ID", "Title", "Resp Group", "Requestor", "Requestor Email", "Requestor Phone", "Acct/Dept", "Class Support Building", "Room number", "Created", "Modified", "Status"]
+STANDARD_FIELDS = ["ID", "Title", "Resp Group", "Requestor", "Requestor Email", "Requestor Phone", "Acct/Dept",
+                   "Class Support Building", "Room number", "Created", "Modified", "Status"]
 TIME_FORMATS: list[str] = [
     # 12 hour
     "%Y-%m-%d %H:%M", "%m/%d/%Y %H:%M", "%m/%d/%y %H:%M", "%d.%m.%Y %H:%M", "%d.%m.%y %H:%M",
@@ -26,9 +29,18 @@ TIME_FORMATS: list[str] = [
     "%Y-%m-%d %I:%M %p", "%m/%d/%Y %I:%M %p", "%m/%d/%y %I:%M %p", "%d.%m.%Y %I:%M %p", "%d.%m.%y %I:%M %p"
 ]
 
+
+class BadReportError(ValueError):
+    """
+    Exception class for errors from bad report.
+    Currently extends ValueError.
+    """
+    pass
+
+
 class Report:
     """
-    Class for the given report and its propeties.
+    Class for the given report and its properties.
     Deals with file I/O and reading CSV.
     """
     time_format: str
@@ -38,7 +50,7 @@ class Report:
     def __init__(self, filename: str):
         self.filename = filename
         # set fields present and time format
-        csv_file: io.TextIOWrapper = open(self.filename, mode="r", encoding="utf-8-sig")
+        csv_file: typing.TextIO = open(self.filename, mode="r", encoding="utf-8-sig")
         any_ticket: dict = next(csv.DictReader(csv_file))
         self.set_fields_present(any_ticket)
         self.set_time_format(any_ticket)
@@ -49,7 +61,7 @@ class Report:
         Given filename, read CSV.
         Populate buildings, rooms, tickets, etc. of given Organization.
         """
-        csv_file: io.TextIOWrapper = open(self.filename, mode="r", encoding="utf-8-sig")
+        csv_file: typing.TextIO = open(self.filename, mode="r", encoding="utf-8-sig")
         csv_tickets: csv.DictReader = csv.DictReader(csv_file)
         count: int = 0
         for row in csv_tickets:
@@ -59,8 +71,7 @@ class Report:
             count += 1
         csv_file.close()
         if not count:
-            print("Ticket report is empty, exiting...", file=sys.stderr)
-            exit(1)
+            raise BadReportError("Ticket report is empty, exiting...")
 
     def clean_ticket_dict(self, csv_ticket: dict) -> None:
         """
@@ -92,7 +103,6 @@ class Report:
             print("""Given report does not follow tdxplot Standard Report guidelines
 Expect limited functionality due to missing ticket information""", file=sys.stderr)
 
-    
     def set_time_format(self, csv_ticket: dict) -> None:
         """
         Given an arbitrary csv_ticket dict from report,
@@ -114,6 +124,4 @@ Expect limited functionality due to missing ticket information""", file=sys.stde
                 return
             except:
                 continue
-        print(f"Time {time_text} in report is not a valid time format", file=sys.stderr)
-        exit(1)
-
+        raise BadReportError(f"Time {time_text} in report is not a valid time format")
