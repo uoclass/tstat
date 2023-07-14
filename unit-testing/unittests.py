@@ -9,9 +9,9 @@ Unit testing for all tdxplot files
 import context
 import unittest
 from report import *
+from cli import *
 
 
-# noinspection PyTypeChecker
 class TestOrganization(unittest.TestCase):
     """
     Test cases for the organization.py,
@@ -245,6 +245,42 @@ class TestOrganization(unittest.TestCase):
         self.assertTrue(isinstance(real_room.building, Building))
         self.assertEqual(real_room.identifier, "Some Room")
         self.assertEqual(real_room.building.name, "Some Building")
+
+
+class TestCli(unittest.TestCase):
+    """
+    Test cases for command line interface in py.
+    """
+
+    def test_no_args(self):
+        """
+        Ensure BadArgError when no args given.
+        """
+        argv: list[str] = []
+        self.assertRaises(BadArgError, main, argv)
+
+    def test_debug_flag(self):
+        """
+        Ensure traceback is changed by -d flag.
+        """
+        argv: list[str] = ["-d", "--perweek", "--nographics", "unit-testing/minimal.csv"]
+        main(argv)
+        self.assertEqual(sys.tracebacklimit, DEBUG_TRACEBACK)
+
+
+    def test_bad_files(self):
+        """
+        Ensure a BadArgError results from a missing or non-CSV filename.
+        """
+        # missing file
+        argv: list[str] = ["--perweek", "unit-testing/no-file.csv"]
+        self.assertRaises(BadArgError, main, argv)
+
+        # file exists but not CSV
+        argv = ["--perweek", "unit-testing/not-a-csv.txt"]
+        self.assertRaises(BadArgError, main, argv)
+
+
 
 if __name__ == "__main__":
     unittest.main()

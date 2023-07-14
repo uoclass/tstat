@@ -23,7 +23,7 @@ COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green",
 DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%m.%Y"]
 QUERY_TYPES = ["perweek", "perbuilding", "perroom"]
 DEFAULT_TRACEBACK = 0
-DEBUG_TRACEBACK = 0
+DEBUG_TRACEBACK = 3
 
 
 class BadArgError(ValueError):
@@ -77,6 +77,9 @@ def check_options(args: dict) -> None:
     """
     Halt program if conflicting or missing flags given.
     """
+    # Debug stipulations
+    if not args.get("debug") and args.get("nographics"):
+        raise BadArgError("Cannot pass --nographics without --debug flag")
     # Stipulations for --perroom
     if args.get("perroom") and not args.get("building"):
         raise BadArgError("No building specified, please specify a building for --perroom using --building [BUILDING_NAME].")
@@ -92,6 +95,7 @@ def check_options(args: dict) -> None:
         raise BadArgError("Cannot pass --weeks and --termend simultaneously")
     if args.get("weeks") == 0:
         raise BadArgError("Cannot pass --weeks 0, use at least 1 week")
+
 
 
 def clean_args(args: dict, org: Organization) -> None:
@@ -140,6 +144,7 @@ def parser_setup():
     # display customization
     parser.add_argument("-n", "--name", type=str, help="Set the name of the plot.")
     parser.add_argument("-c", "--color", choices=COLORS, help="Set the color of the plot.")
+    parser.add_argument("--nographics", action="store_true", help="Print query results but do not show graph")
     # filters
     parser.add_argument("-t", "--termstart", type=str,
                         help="Exclude tickets before this date (calendar week for --perweek)")
@@ -156,7 +161,7 @@ def parser_setup():
     return parser
 
 
-def main():
+def main(argv):
     """
     Parse arguments, call basic input validation.
     Call plot.py with args.
@@ -165,17 +170,17 @@ def main():
     sys.tracebacklimit = DEFAULT_TRACEBACK
 
     # need arguments
-    if len(sys.argv) < 2:
+    if len(argv) < 2:
         raise BadArgError("No arguments provided")
 
     # Check last arg is a valid filename
-    filename: str = sys.argv.pop()
+    filename: str = argv.pop()
     filename.strip()
     check_file(filename)
 
     # set up parsers and parse into dict
     parser: argparse.ArgumentParser = parser_setup()
-    args: dict = vars(parser.parse_args())
+    args: dict = vars(parser.parse_args(argv))
 
     # add missing info to args
     args["filename"] = filename
@@ -202,14 +207,17 @@ def main():
     query_type = args["querytype"]
     if query_type == "perweek":
         tickets_per_week = org.per_week(args)
-        view_per_week(tickets_per_week, args)
+        if not args.get("nographics"):
+            view_per_week(tickets_per_week, args)
     if query_type == "perbuilding":
         tickets_per_building = org.per_building(args)
-        view_per_building(tickets_per_building, args)
+        if not args.get("nographics"):
+            view_per_building(tickets_per_building, args)
     if query_type == "perroom":
         tickets_per_room = org.per_room(args)
-        view_per_room(tickets_per_room, args)
+        if not args.get("nographics"):
+            view_per_room(tickets_per_room, args)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
