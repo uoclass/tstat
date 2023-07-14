@@ -10,14 +10,10 @@ from the information in a given report.
 # Packages
 from datetime import *
 import csv
-import os
-import sys
-import io
 import typing
 
 # Files
 from organization import *
-
 
 # Constants
 STANDARD_FIELDS = ["ID", "Title", "Resp Group", "Requestor", "Requestor Email", "Requestor Phone", "Acct/Dept",
@@ -44,7 +40,7 @@ class Report:
     Deals with file I/O and reading CSV.
     """
     time_format: str
-    fields_present: str
+    fields_present: list[str]
     filename = str
 
     def __init__(self, filename: str):
@@ -52,8 +48,8 @@ class Report:
         # set fields present and time format
         csv_file: typing.TextIO = open(self.filename, mode="r", encoding="utf-8-sig")
         any_ticket: dict = next(csv.DictReader(csv_file))
-        self.set_fields_present(any_ticket)
-        self.set_time_format(any_ticket)
+        self.fields_present = get_fields_present(any_ticket)
+        self.time_format = get_time_format(any_ticket)
         csv_file.close()
 
     def populate(self, org: Organization) -> None:
@@ -86,42 +82,42 @@ class Report:
         if csv_ticket.get("Modified"):
             csv_ticket["Modified"] = datetime.strptime(csv_ticket["Modified"], self.time_format)
 
-    def set_fields_present(self, csv_ticket: dict) -> None:
-        """
-        Given an arbitrary csv_ticket dict from report,
-        Check which of STANDARD_FIELDS are present in report.
-        Set self.fields_present accordingly.
-        """
-        self.fields_present: list[str] = []
-        for field in STANDARD_FIELDS:
-            try:
-                csv_ticket[field]
-                self.fields_present.append(field)
-            except:
-                pass
-        if len(STANDARD_FIELDS) != len(self.fields_present):
-            print("""Given report does not follow tdxplot Standard Report guidelines
-Expect limited functionality due to missing ticket information""", file=sys.stderr)
 
-    def set_time_format(self, csv_ticket: dict) -> None:
-        """
-        Given an arbitrary csv_ticket dict from report,
-        Check that time adheres to one of TIME_FORMATS.
-        Returns format string or throws error if no match.
-        """
-        # check whether a time attribute is present
-        if csv_ticket.get("Created"):
-            time_text: str = csv_ticket["Created"]
-        elif csv_ticket.get("Modified"):
-            time_text: str = csv_ticket["Modified"]
-        else:
-            # no date attributes, so no time format to set
-            return
-        for try_format in TIME_FORMATS:
-            try:
-                datetime.strptime(time_text, try_format)
-                self.time_format = try_format
-                return
-            except:
-                continue
-        raise BadReportError(f"Time {time_text} in report is not a valid time format")
+# Helper functions
+def get_fields_present(csv_ticket: dict) -> Union[list[str], None]:
+    """
+    Given an arbitrary csv_ticket dict from report,
+    Check which of STANDARD_FIELDS are present in report.
+    Set self.fields_present accordingly.
+    """
+    fields_present: list[str] = []
+    for field in STANDARD_FIELDS:
+        if csv_ticket.get(field) is not None:
+            fields_present.append(field)
+    if len(STANDARD_FIELDS) != len(fields_present):
+        print("""Given report does not follow tdxplot Standard Report guidelines
+Expect limited functionality due to missing ticket information""", file=sys.stderr)
+    return fields_present
+
+
+def get_time_format(csv_ticket: dict) -> Union[str, None]:
+    """
+    Given an arbitrary csv_ticket dict from report,
+    Check that time adheres to one of TIME_FORMATS.
+    Returns format string or throws error if no match.
+    """
+    # check whether a time attribute is present
+    if csv_ticket.get("Created"):
+        time_text: str = csv_ticket["Created"]
+    elif csv_ticket.get("Modified"):
+        time_text: str = csv_ticket["Modified"]
+    else:
+        # no date attributes, so no time format to set
+        return None
+    for try_format in TIME_FORMATS:
+        try:
+            datetime.strptime(time_text, try_format)
+            return try_format
+        except ValueError:
+            continue
+    raise BadReportError(f"Time {time_text} in report is not a valid time format")
