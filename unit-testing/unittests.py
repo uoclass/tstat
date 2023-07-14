@@ -281,6 +281,23 @@ class TestCli(unittest.TestCase):
         self.assertRaises(BadArgError, main, argv)
 
 
+class TestReport(unittest.TestCase):
+    """
+    Test cases for the report.py,
+    Specifically the Report class.
+    """
+    def test_populate(self):
+        org = Organization()
+        report = Report("report_unit_test.csv")
+        report.populate(org)
+        
+        # empty report
+        org = Organization()
+        report = Report("report_unit_test_empty.csv")
+        report.populate(org)
+
+        # all fields report
+        # all incorrect fields report
 
 if __name__ == "__main__":
     unittest.main()
