@@ -288,12 +288,12 @@ class TestReport(unittest.TestCase):
     """
     def test_populate(self):
         org = Organization()
-        report = Report("report_unit_test.csv")
+        report = Report("unit-testing/minimal.csv")
         report.populate(org)
         
         # empty report
         org = Organization()
-        report = Report("report_unit_test_empty.csv")
+        report = Report("unit-testing/blanks.csv")
         report.populate(org)
 
         # all fields report
