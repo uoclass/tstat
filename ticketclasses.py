@@ -47,11 +47,13 @@ class User:
     email: str
     name: str
     phone: str
+    tickets: list["Ticket"]
 
     def __init__(self, email, name, phone) -> None:
        self.email = email
        self.name = name
        self.phone = phone
+       self.tickets = []
 
     def __str__(self) -> str:
         return f"User {self.email} with name {self.name}"
