@@ -21,7 +21,7 @@ from visual import *
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"]
 DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%m.%y"]
-QUERY_TYPES = ["perweek", "perbuilding", "perroom"]
+QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor"]
 DEFAULT_TRACEBACK = 0
 DEBUG_TRACEBACK = 3
 
@@ -155,12 +155,13 @@ def parser_setup():
                         help="Exclude tickets after this date (calendar week for --perweek)")
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term for --perweek")
     parser.add_argument("-b", "--building", type=str, help="Specify building filter.")
+    # parser.add_argument("-x", "--topx", type=int, help="Specify the top 'x' filter.")
     # query presets
     query_group = parser.add_mutually_exclusive_group(required=True)
     query_group.add_argument("--perweek", action="store_true", help="Show tickets per week")
     query_group.add_argument("--perbuilding", action="store_true", help="Show tickets per building")
     query_group.add_argument("--perroom", action="store_true", help="Show tickets per room in a specified building.")
-
+    query_group.add_argument("--perrequestor", action="store_true", help="Show ticket counts by requestor.")
     return parser
 
 
@@ -185,6 +186,11 @@ def run_query(args: dict, org: Organization) -> dict:
         if not args.get("nographics"):
             view_per_room(tickets_per_room, args)
         return tickets_per_room
+    if query_type == "perrequestor":
+        tickets_per_requestor = org.per_requestor(args)
+        if not args.get("nographics"):
+            view_per_requestor(tickets_per_requestor)
+        return tickets_per_requestor
 
 
 def main(argv):

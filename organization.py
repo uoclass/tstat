@@ -19,7 +19,7 @@ from ticketclasses import *
 
 # Constants
 DEFAULT_WEEKS = 11
-
+DEFAULT_REQUESTORS = 15
 
 class Organization:
     """
@@ -79,7 +79,9 @@ tickets: {len(self.tickets)}"""
         new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), create_mode=True)
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
                                          ticket_dict.get("Room number"), create_mode=True)
-        new_ticket.room.tickets.append(new_ticket)
+        # add tickets to the room and requestor members
+        new_ticket.room.tickets.append(new_ticket) 
+        new_ticket.requestor.tickets.append(new_ticket)
 
         # Add new ticket to organization's ticket dict
         self.tickets[new_ticket.id] = new_ticket
@@ -254,6 +256,17 @@ tickets: {len(self.tickets)}"""
         # return dict of counts per room
         return room_count
 
+    def per_requestor(self, args: dict):
+        """
+        Return a dict counting tickets by requestor within a given building.
+        This information is meant to be used as input for graphing purposes.
+        """
+        requestor_count: dict[User, int] = {}
+        for requestor_id in self.users:
+            requestor = self.users[requestor_id]
+            requestor_count[requestor] = len(requestor.tickets)
+
+        return requestor_count
 
 # Helper functions
 
@@ -280,6 +293,7 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
     term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
+    
     filtered: list[Ticket] = []
     for ticket in tickets:
         if building and ticket.room.building != building:

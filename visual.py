@@ -16,7 +16,8 @@ from matplotlib import pyplot
 DEFAULT_COLOR = "gray"
 DEFAULT_NAMES = {"perweek": "Tickets per Week",
                  "perbuilding": "Tickets per Building",
-                 "perroom": "Tickets per Room"}
+                 "perroom": "Tickets per Room",
+                 "perrequestor": "Tickets per Requestor"}
 
 def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
     """
@@ -64,6 +65,21 @@ def view_per_room(tickets_per_room: dict["Room", int], args: dict) -> None:
 
     bar_view(room_labels, room_counts, args)
 
+def view_per_requestor(tickets_per_requestor: dict["User", int], args: dict) -> None:
+    """
+    Display bar chart showing ticket counts by requestor.
+    """
+    # FIXME: Finish
+    requestor_labels: list[str] = []
+    requestor_counts: list[int] = []
+    sorted_counts = sorted(tickets_per_requestor.items(), key=lambda item: item[1])
+    for requestor, count in sorted_counts:
+        requestor_name = f"{requestor.name}"
+        requestor_labels.append(requestor_name)
+        requestor_counts.append(count)
+
+    bar_view(requestor_labels, requestor_counts, args)
+
 def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
     """
     Display a bar chart using given bar labels and bar heights.
@@ -95,7 +111,7 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
             fontsize = "medium"
         )
 
-    if args["querytype"] in ["perbuilding", "perroom"]:
+    if args["querytype"] in ["perbuilding", "perroom", "perrequestor"]:
         # adjust for long building names
         # FIXME take in building name abbreviations
         pyplot.xticks(rotation=45, ha='right')
