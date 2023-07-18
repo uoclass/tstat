@@ -267,30 +267,136 @@ class TestCli(unittest.TestCase):
         main(argv)
         self.assertEqual(sys.tracebacklimit, DEBUG_TRACEBACK)
 
+    def test_check_file(self):
+        """
+        Test cases for check_file() function.
+        """
+        # bad files
+        self.assertRaises(BadArgError, check_file, "unit-testing/no-file.csv")
+        self.assertRaises(BadArgError, check_file, "unit-testing/not-a-csv.txt")
+        self.assertRaises(BadArgError, check_file, "")
 
-    def test_bad_files(self):
-        """
-        Ensure a BadArgError results from a missing or non-CSV filename.
-        """
-        # missing file
+        # expected errors from main()
         argv: list[str] = ["--perweek", "unit-testing/no-file.csv"]
         self.assertRaises(BadArgError, main, argv)
-
-        # file exists but not CSV
         argv = ["--perweek", "unit-testing/not-a-csv.txt"]
         self.assertRaises(BadArgError, main, argv)
+        argv = ["--perweek"]
+        self.assertRaises(BadArgError, main, argv)
+
+    def test_get_datetime(self):
+        """
+        Test cases for get_datetime() function.
+        """
+        # bad date formats
+        self.assertRaises(BadArgError, get_datetime, "19700101")
+        self.assertRaises(BadArgError, get_datetime, "January 1, 1970")
+        self.assertRaises(BadArgError, get_datetime, "31/12/1970")
+
+        # good date formats
+        self.assertEqual(datetime(2020, 12, 31), get_datetime("2020-12-31"))
+        self.assertEqual(datetime(2020, 12, 31), get_datetime("12/31/2020"))
+        self.assertEqual(datetime(2020, 12, 31), get_datetime("12/31/20"))
+        self.assertEqual(datetime(2020, 12, 31), get_datetime("31.12.2020"))
+        self.assertEqual(datetime(2020, 12, 31), get_datetime("31.12.20"))
+
+        # expected errors from main()
+        argv: list[str] = ["--perweek", "-t", "19700101", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
+
+    def test_set_query_type(self):
+        """
+        Test cases for set_query_type() function.
+        """
+        # dict gets modified
+        args: dict = {"perweek": True}
+        set_query_type(args)
+        self.assertEqual(args["querytype"], "perweek")
+
+        # rejects multiple types
+        args: dict = {"perweek": True, "perbuilding": True}
+        self.assertRaises(BadArgError, set_query_type, args)
+
+
+    def test_check_options(self):
+        """
+        Test cases for check_options() function.
+        Tests main(argv) rather than check_options() directly.
+        """
+        # debug stipulations
+        argv: list[str] = ["--perweek", "--nographics", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
+
+        # perroom stipulations
+        argv = ["--perroom", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
+
+        # perbuilding stipulations
+        argv = ["--perbuilding", "-b", "Lillis", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
+
+        # perweek stipulations
+        argv = ["--perbuilding", "-w", "10", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
+        argv = ["--perweek", "-w", "10", "-e", "12/31/2023", "unit-testing/minimal.csv"]
+
+    def test_clean_args(self):
+        """
+        Test cases for clean_args() function.
+        """
+        org = Organization()
+        mybuilding: Building = org.find_building("My Building", create_mode=True)
+
+        # datetimes fixed
+        args: dict = {"termstart": "12/31/2020", "termend": "12/31/2020"}
+        clean_args(args, org)
+        expected: dict = {"termstart": datetime(2020, 12, 31), "termend": datetime(2020, 12, 31)}
+        self.assertEqual(args, expected)
+
+        # building object fixed
+        args: dict = {"building": "My Building"}
+        clean_args(args, org)
+        expected: dict = {"building": mybuilding}
+        self.assertEqual(args, expected)
+
+    def test_check_report(self):
+        """
+        Test cases for check_report() function.
+        """
+        # correct fields present
+        org = Organization()
+        report = Report("unit-testing/minimal.csv")
+        report.populate(org)
+        args: dict = {"querytype": "perweek"}
+        check_report(args, report)
+        args = {"querytype": "perbuilding"}
+        check_report(args, report)
+        args = {"querytype": "perroom"}
+        check_report(args, report)
+
+        # missing fields
+        org = Organization()
+        report = Report("unit-testing/missing-fields.csv")
+        report.populate(org)
+        args = {"querytype": "perweek"}
+        self.assertRaises(BadArgError, check_report, args, report)
+        args = {"querytype": "perbuilding"}
+        self.assertRaises(BadArgError, check_report, args, report)
+        args = {"querytype": "perroom", "building": "The Building"}
+        self.assertRaises(BadArgError, check_report, args, report)
 
 
 class TestReport(unittest.TestCase):
     """
-    Test cases for the report.py,
+    Test cases for report.py,
     Specifically the Report class.
     """
+
     def test_populate(self):
         org = Organization()
         report = Report("unit-testing/minimal.csv")
         report.populate(org)
-        
+
         # empty report
         org = Organization()
         report = Report("unit-testing/blanks.csv")
@@ -299,5 +405,7 @@ class TestReport(unittest.TestCase):
         # all fields report
         # all incorrect fields report
 
+
 if __name__ == "__main__":
+    print("Run from project root, not from unit-testing dir")
     unittest.main()

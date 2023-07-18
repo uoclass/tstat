@@ -20,7 +20,7 @@ from visual import *
 
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"]
-DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%m.%Y"]
+DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%m.%y"]
 QUERY_TYPES = ["perweek", "perbuilding", "perroom"]
 DEFAULT_TRACEBACK = 0
 DEBUG_TRACEBACK = 3
@@ -47,10 +47,10 @@ def check_file(filename: str):
         raise BadArgError(f"File {filename} is not a CSV. Include a valid filename as last argument")
 
 
-def check_date(date_text: str):
+def get_datetime(date_text: str):
     """
     Checks that given string adheres to one of DATE_FORMATS.
-    Returns datetime object.
+    Returns datetime object. Error if not recognized.
     """
     for date_format in DATE_FORMATS:
         try:
@@ -58,7 +58,7 @@ def check_date(date_text: str):
             return result_date
         except ValueError:
             continue
-    raise ValueError(f"Date {date_text} not recognized, try yyyy-mm-dd")
+    raise BadArgError(f"Date {date_text} not recognized, try yyyy-mm-dd")
 
 
 def set_query_type(args: dict) -> None:
@@ -69,7 +69,7 @@ def set_query_type(args: dict) -> None:
     for try_type in QUERY_TYPES:
         if args.get(try_type):
             if args.get("querytype"):
-                raise ValueError("Pass exactly one query type argument (e.g. --perweek)")
+                raise BadArgError("Pass exactly one query type argument (e.g. --perweek)")
             args["querytype"] = try_type
 
 
@@ -80,9 +80,11 @@ def check_options(args: dict) -> None:
     # Debug stipulations
     if not args.get("debug") and args.get("nographics"):
         raise BadArgError("Cannot pass --nographics without --debug flag")
+
     # Stipulations for --perroom
     if args.get("perroom") and not args.get("building"):
-        raise BadArgError("No building specified, please specify a building for --perroom using --building [BUILDING_NAME].")
+        raise BadArgError(
+            "No building specified, please specify a building for --perroom using --building [BUILDING_NAME].")
 
     # Stipulations for --perbuilding
     if args.get("perbuilding") and args.get("building"):
@@ -97,7 +99,6 @@ def check_options(args: dict) -> None:
         raise BadArgError("Cannot pass --weeks 0, use at least 1 week")
 
 
-
 def clean_args(args: dict, org: Organization) -> None:
     """
     Fix formatting by changing datatypes of some args.
@@ -105,9 +106,9 @@ def clean_args(args: dict, org: Organization) -> None:
     """
     # ensure valid date formats
     if args.get("termstart"):
-        args["termstart"] = check_date(args["termstart"])
+        args["termstart"] = get_datetime(args["termstart"])
     if args.get("termend"):
-        args["termend"] = check_date(args["termend"])
+        args["termend"] = get_datetime(args["termend"])
 
     # use building object
     if args.get("building"):
@@ -127,10 +128,12 @@ def check_report(args: dict, report: Report) -> None:
             raise BadArgError("Cannot run a tickets-per-week query without Created field present in report")
     if query_type == "perbuilding":
         if "Class Support Building" not in report.fields_present:
-            raise BadArgError("Cannot run a tickets-per-building query without Class Support Building field present in report")
+            raise BadArgError(
+                "Cannot run a tickets-per-building query without Class Support Building field present in report")
     if query_type == "perroom":
         if ("Class Support Building" not in report.fields_present) or ("Room number" not in report.fields_present):
-            raise BadArgError("Cannot run a tickets-per-room query without Class Support Building and Room number field present in report")
+            raise BadArgError(
+                "Cannot run a tickets-per-room query without Class Support Building and Room number field present in report")
 
 
 def parser_setup():
@@ -161,10 +164,33 @@ def parser_setup():
     return parser
 
 
+def run_query(args: dict, org: Organization) -> dict:
+    """
+    Run query with given args on given org.
+    Return results, call appropriate visual.py function.
+    """
+    query_type = args["querytype"]
+    if query_type == "perweek":
+        tickets_per_week = org.per_week(args)
+        if not args.get("nographics"):
+            view_per_week(tickets_per_week, args)
+        return tickets_per_week
+    if query_type == "perbuilding":
+        tickets_per_building = org.per_building(args)
+        if not args.get("nographics"):
+            view_per_building(tickets_per_building, args)
+        return tickets_per_building
+    if query_type == "perroom":
+        tickets_per_room = org.per_room(args)
+        if not args.get("nographics"):
+            view_per_room(tickets_per_room, args)
+        return tickets_per_room
+
+
 def main(argv):
     """
     Parse arguments, call basic input validation.
-    Call plot.py with args.
+    Call run_query() to run and display results.
     """
     # set default traceback
     sys.tracebacklimit = DEFAULT_TRACEBACK
@@ -204,19 +230,7 @@ def main(argv):
     clean_args(args, org)
 
     # run query and display
-    query_type = args["querytype"]
-    if query_type == "perweek":
-        tickets_per_week = org.per_week(args)
-        if not args.get("nographics"):
-            view_per_week(tickets_per_week, args)
-    if query_type == "perbuilding":
-        tickets_per_building = org.per_building(args)
-        if not args.get("nographics"):
-            view_per_building(tickets_per_building, args)
-    if query_type == "perroom":
-        tickets_per_room = org.per_room(args)
-        if not args.get("nographics"):
-            view_per_room(tickets_per_room, args)
+    run_query(args, org)
 
 
 if __name__ == "__main__":
