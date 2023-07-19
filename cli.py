@@ -81,6 +81,14 @@ def check_options(args: dict) -> None:
     if not args.get("debug") and args.get("nographics"):
         raise BadArgError("Cannot pass --nographics without --debug flag")
 
+    # Query result cropping stipulations
+    if args.get("head") is not None and args.get("tail") is not None:
+        raise BadArgError("Cannot pass --head and --tail simultaneously")
+    if args.get("head") == 0:
+        raise BadArgError("Cannot pass --head 0, pass a larger number")
+    if args.get("tail") == 0:
+        raise BadArgError("Cannot pass --tail 0, pass a larger number")
+
     # Stipulations for --perroom
     # if args.get("perroom") and not args.get("building"):
     #     raise BadArgError(
@@ -155,7 +163,10 @@ def parser_setup():
                         help="Exclude tickets after this date (calendar week for --perweek)")
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term for --perweek")
     parser.add_argument("-b", "--building", type=str, help="Specify building filter.")
-    # parser.add_argument("-x", "--topx", type=int, help="Specify the top 'x' filter.")
+    # result cropping
+    crop_group = parser.add_mutually_exclusive_group(required=False)
+    crop_group.add_argument("--head", type=int, help="Show only first X entries from query results")
+    crop_group.add_argument("--tail", type=int, help="Show only last X entries from query results")
     # query presets
     query_group = parser.add_mutually_exclusive_group(required=True)
     query_group.add_argument("--perweek", action="store_true", help="Show tickets per week")

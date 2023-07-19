@@ -269,6 +269,7 @@ tickets: {len(self.tickets)}"""
             requestor = self.users[requestor_id]
             requestor_count[requestor] = len(filter_tickets(requestor.tickets, args))
 
+        # return dict of counts per requestor
         return requestor_count
 
 # Helper functions
