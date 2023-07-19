@@ -247,11 +247,14 @@ tickets: {len(self.tickets)}"""
 
         # ensure we have a building and not empty/None
         building: Building = args.get("building")
-        assert type(building) == Building
-
-        for room_identifier in building.rooms:
-            room = building.rooms[room_identifier]
-            room_count[room] = len(filter_tickets(room.tickets, args, ["building"]))
+        if building:
+            for room_identifier in building.rooms:
+                room = building.rooms[room_identifier]
+                room_count[room] = len(filter_tickets(room.tickets, args, ["building"]))
+        else:
+            for bldg in self.buildings.values():
+                for rm in bldg.rooms.values():
+                    room_count[rm] = len(filter_tickets(rm.tickets, args))
 
         # return dict of counts per room
         return room_count
@@ -264,7 +267,7 @@ tickets: {len(self.tickets)}"""
         requestor_count: dict[User, int] = {}
         for requestor_id in self.users:
             requestor = self.users[requestor_id]
-            requestor_count[requestor] = len(requestor.tickets)
+            requestor_count[requestor] = len(filter_tickets(requestor.tickets, args))
 
         return requestor_count
 
@@ -293,7 +296,7 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
     term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
-    
+
     filtered: list[Ticket] = []
     for ticket in tickets:
         if building and ticket.room.building != building:

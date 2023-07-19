@@ -82,9 +82,9 @@ def check_options(args: dict) -> None:
         raise BadArgError("Cannot pass --nographics without --debug flag")
 
     # Stipulations for --perroom
-    if args.get("perroom") and not args.get("building"):
-        raise BadArgError(
-            "No building specified, please specify a building for --perroom using --building [BUILDING_NAME].")
+    # if args.get("perroom") and not args.get("building"):
+    #     raise BadArgError(
+    #         "No building specified, please specify a building for --perroom using --building [BUILDING_NAME].")
 
     # Stipulations for --perbuilding
     if args.get("perbuilding") and args.get("building"):
