@@ -264,8 +264,9 @@ tickets: {len(self.tickets)}"""
         requestor_count: dict[User, int] = {}
         for requestor_id in self.users:
             requestor = self.users[requestor_id]
-            requestor_count[requestor] = len(requestor.tickets)
+            requestor_count[requestor] = len(filter_tickets(requestor.tickets, args))
 
+        # return dict of counts per requestor
         return requestor_count
 
 # Helper functions
