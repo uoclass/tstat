@@ -84,10 +84,10 @@ def check_options(args: dict) -> None:
     # Query result cropping stipulations
     if args.get("head") is not None and args.get("tail") is not None:
         raise BadArgError("Cannot pass --head and --tail simultaneously")
-    if args.get("head") == 0:
-        raise BadArgError("Cannot pass --head 0, pass a larger number")
-    if args.get("tail") == 0:
-        raise BadArgError("Cannot pass --tail 0, pass a larger number")
+    if args.get("head") is not None and args.get("head") < 1:
+        raise BadArgError(f"Cannot pass --head {args['head']}, pass at least 1")
+    if args.get("tail") is not None and args.get("tail") < 1:
+        raise BadArgError(f"Cannot pass --tail {args['tail']}, pass at least 1")
 
     # Stipulations for --perroom
     # if args.get("perroom") and not args.get("building"):
@@ -103,8 +103,8 @@ def check_options(args: dict) -> None:
         raise BadArgError("Cannot pass --weeks without --perweek")
     if args.get("weeks") and args.get("termend"):
         raise BadArgError("Cannot pass --weeks and --termend simultaneously")
-    if args.get("weeks") == 0:
-        raise BadArgError("Cannot pass --weeks 0, use at least 1 week")
+    if args.get("weeks") is not None and args.get("weeks") < 1:
+        raise BadArgError(f"Cannot pass --weeks {args['weeks']}, use at least 1 week")
 
 
 def clean_args(args: dict, org: Organization) -> None:
@@ -200,7 +200,7 @@ def run_query(args: dict, org: Organization) -> dict:
     if query_type == "perrequestor":
         tickets_per_requestor = org.per_requestor(args)
         if not args.get("nographics"):
-            view_per_requestor(tickets_per_requestor)
+            view_per_requestor(tickets_per_requestor, args)
         return tickets_per_requestor
 
 
