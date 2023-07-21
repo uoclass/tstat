@@ -89,11 +89,6 @@ def check_options(args: dict) -> None:
     if args.get("tail") is not None and args.get("tail") < 1:
         raise BadArgError(f"Cannot pass --tail {args['tail']}, pass at least 1")
 
-    # Stipulations for --perroom
-    # if args.get("perroom") and not args.get("building"):
-    #     raise BadArgError(
-    #         "No building specified, please specify a building for --perroom using --building [BUILDING_NAME].")
-
     # Stipulations for --perbuilding
     if args.get("perbuilding") and args.get("building"):
         raise BadArgError("Cannot filter to a single building in in a --perbuilding query")

@@ -70,6 +70,7 @@ tickets: {len(self.tickets)}"""
         new_ticket.title = ticket_dict.get("Title")
         new_ticket.created = ticket_dict.get("Created")
         new_ticket.modified = ticket_dict.get("Modified")
+        new_ticket.status = ticket_dict.get("Status")
 
         # use find methods set these attributes
         new_ticket.responsible = self.find_group(ticket_dict.get("Resp Group"), create_mode=True)
@@ -79,12 +80,13 @@ tickets: {len(self.tickets)}"""
         new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), create_mode=True)
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
                                          ticket_dict.get("Room number"), create_mode=True)
-        # add tickets to the room and requestor members
-        new_ticket.room.tickets.append(new_ticket) 
-        new_ticket.requestor.tickets.append(new_ticket)
 
-        # Add new ticket to organization's ticket dict
+        # add ticket to entities' lists and to org's dict
         self.tickets[new_ticket.id] = new_ticket
+        new_ticket.room.tickets.append(new_ticket)
+        new_ticket.requestor.tickets.append(new_ticket)
+        new_ticket.responsible.tickets.append(new_ticket)
+        new_ticket.department.tickets.append(new_ticket)
 
     def find_group(self, name: str = "Undefined", create_mode: bool = False) -> Group:
         """

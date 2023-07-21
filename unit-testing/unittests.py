@@ -301,7 +301,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(datetime(2020, 12, 31), get_datetime("31.12.20"))
 
         # expected errors from main()
-        argv: list[str] = ["--perweek", "-t", "19700101", "unit-testing/minimal.csv"]
+        argv: list[str] = ["-d", "--nographics", "--perweek", "-t", "19700101", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
     def test_set_query_type(self):
@@ -323,22 +323,21 @@ class TestCli(unittest.TestCase):
         Test cases for check_options() function.
         Tests main(argv) rather than check_options() directly.
         """
-        # debug stipulations
-        argv: list[str] = ["--perweek", "--nographics", "unit-testing/minimal.csv"]
+        # debug stipulations (pass --nographics without -d)
+        argv: list[str] = ["--nographics", "--perweek", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
-        # perroom stipulations
-        argv = ["--perroom", "unit-testing/minimal.csv"]
-        self.assertRaises(BadArgError, main, argv)
-
-        # perbuilding stipulations
-        argv = ["--perbuilding", "-b", "Lillis", "unit-testing/minimal.csv"]
+        # perbuilding stipulations (pass -b with --perbuilding)
+        argv = ["-d", "--nographics", "--perbuilding", "-b", "Lillis", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perweek stipulations
+        # pass -w without --perweek
         argv = ["--perbuilding", "-w", "10", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
+        # pass -w and -e at once
         argv = ["--perweek", "-w", "10", "-e", "12/31/2023", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
 
     def test_clean_args(self):
         """
@@ -393,19 +392,97 @@ class TestReport(unittest.TestCase):
     """
 
     def test_populate(self):
+        """
+        Test cases for populate() method.
+        """
         org = Organization()
         report = Report("unit-testing/minimal.csv")
         report.populate(org)
 
-        # empty report
-        org = Organization()
-        report = Report("unit-testing/blanks.csv")
-        report.populate(org)
+        # all campus entities created
+        group: Group = org.find_group("USS-Classrooms")
+        self.assertTrue(group)
+        requestor: User = org.find_user("example@example.com", "Sir Example", "5555555555")
+        self.assertTrue(requestor)
+        department: Department = org.find_department("Based Department")
+        self.assertTrue(department)
+        building: Building = org.find_building("The Building")
+        self.assertTrue(building)
+        room: Room = org.find_room("The Building", "111")
+        self.assertTrue(room)
 
-        # all fields report
-        # all incorrect fields report
+        # assert ticket created well
+        self.assertEqual(len(org.tickets), 1)
+        tick: Ticket = org.tickets.get(12345678)
+        self.assertTrue(tick)
+        self.assertEqual(tick.id, 12345678)
+        self.assertEqual(tick.responsible, group)
+        self.assertEqual(tick.requestor, requestor)
+        self.assertEqual(tick.department, department)
+        self.assertEqual(tick.room, room)
+        self.assertEqual(tick.room.building, building)
+        self.assertEqual(tick.created, datetime(2023, 7, 14, 10, 41))
+        self.assertEqual(tick.modified, datetime(2023, 7, 14, 10, 41))
+        # FIXME change to Enum once status functionality implemented
+        self.assertEqual(tick.status, "Closed")
 
+        # ticket lists for entities created well
+        self.assertEqual(requestor.tickets, [tick])
+        self.assertEqual(room.tickets, [tick])
+        self.assertEqual(department.tickets, [tick])
+        self.assertEqual(group.tickets, [tick])
+
+    def test_clean_ticket_dict(self):
+        """
+        Test cases for clean_ticket_dict() method.
+        """
+        # ensure cleaned dict matches expectation
+        report = Report("unit-testing/minimal.csv")
+        dirty_dict: dict = {"ID": "12345678",
+                            "Title": "My Ticket",
+                            "Resp Group": "USS-Classrooms",
+                            "Requestor": "Sir Example",
+                            "Requestor Email": "example@example.com",
+                            "Requestor Phone": "5555555555",
+                            "Acct/Dept": "Based Department",
+                            "Class Support Building": "The Building",
+                            "Room number": "111",
+                            "Created": "7/14/2023 10:41",
+                            "Modified": "7/14/2023 10:41",
+                            "Status": "Closed"}
+        expected: dict = {"ID": 12345678,
+                          "Title": "My Ticket",
+                          "Resp Group": "USS-Classrooms",
+                          "Requestor": "Sir Example",
+                          "Requestor Email": "example@example.com",
+                          "Requestor Phone": "5555555555",
+                          "Acct/Dept": "Based Department",
+                          "Class Support Building": "The Building",
+                          "Room number": "111",
+                          "Created": datetime(2023, 7, 14, 10, 41),
+                          "Modified": datetime(2023, 7, 14, 10, 41),
+                          "Status": "Closed"}
+        report.clean_ticket_dict(dirty_dict)
+        self.assertEqual(dirty_dict, expected)
+
+    def test_constructor(self):
+        """
+        Test cases for __init__() constructor.
+        """
+        # ensure time_format and fields_present set well
+        full_report: Report = Report("unit-testing/minimal.csv")
+        self.assertEqual(full_report.fields_present, ["ID", "Title", "Resp Group", "Requestor", "Requestor Email",
+                                                 "Requestor Phone", "Acct/Dept", "Class Support Building",
+                                                 "Room number", "Created", "Modified", "Status"])
+        self.assertEqual(full_report.time_format, "%m/%d/%Y %H:%M")
+        part_report: Report = Report("unit-testing/missing-fields.csv")
+        self.assertEqual(part_report.fields_present, ["ID", "Title", "Resp Group", "Acct/Dept", "Status"])
+        self.assertEqual(part_report.time_format, None)
 
 if __name__ == "__main__":
-    print("Run from project root, not from unit-testing dir")
+    try:
+        dir_test: typing.TextIO = open("unit-testing/context.py", mode="r", encoding="utf-8-sig")
+        dir_test.close()
+    except OSError:
+        raise Exception("Run unit tests from project root, not from unit-testing dir")
     unittest.main()

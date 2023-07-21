@@ -66,9 +66,11 @@ class Group:
     A TDX group (typically as Resp Group on a ticket).
     """
     name: str
+    tickets: list["Ticket"]
 
     def __init__(self, name) -> None:
         self.name = name
+        self.tickets = []
 
     def __str__(self) -> str:
         return f"Group {self.name}"
@@ -81,9 +83,11 @@ class Department:
     A TDX department (typically listed under requestor on a ticket).
     """
     name: str
+    tickets: list["Ticket"]
 
     def __init__(self, name) -> None:
         self.name = name
+        self.tickets = []
 
     def __str__(self) -> str:
         return f"Department {self.name}"
