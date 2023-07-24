@@ -246,6 +246,37 @@ class TestOrganization(unittest.TestCase):
         self.assertEqual(real_room.identifier, "Some Room")
         self.assertEqual(real_room.building.name, "Some Building")
 
+class TestQueries(unittest.TestCase):
+    """
+    Test cases for all queries in the Organization class.
+    """
+
+    def test_per_week(self):
+        """
+        Test cases for per_week() method.
+        """
+        # tests using querytests1.csv file
+        org = Organization()
+        report = Report("unit-testing/querytests1.csv")
+        report.populate(org)
+
+        expected: dict[datetime, int] = {
+            datetime(2023, 4, 3, 0, 0): 2,
+            datetime(2023, 4, 10, 0, 0): 1,
+            datetime(2023, 4, 17, 0, 0): 0,
+            datetime(2023, 4, 24, 0, 0): 1,
+            datetime(2023, 5, 1, 0, 0): 1,
+            datetime(2023, 5, 8, 0, 0): 1,
+            datetime(2023, 5, 15, 0, 0): 1,
+            datetime(2023, 5, 22, 0, 0): 1,
+            datetime(2023, 5, 29, 0, 0): 1,
+            datetime(2023, 6, 5, 0, 0): 0,
+            datetime(2023, 6, 12, 0, 0): 1,
+        }
+
+        args = {}
+        self.assertEqual(org.per_week(args), expected)
+
 
 class TestCli(unittest.TestCase):
     """
