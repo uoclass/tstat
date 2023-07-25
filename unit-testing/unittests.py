@@ -254,29 +254,151 @@ class TestQueries(unittest.TestCase):
     def test_per_week(self):
         """
         Test cases for per_week() method.
+        Also ensures termstart and termend are week-based,
+        Unlike normal termstart/end behavior in other queries.
         """
-        # tests using querytests1.csv file
+        # setup
         org = Organization()
         report = Report("unit-testing/querytests1.csv")
         report.populate(org)
 
+        # no args
+        args: dict = {}
         expected: dict[datetime, int] = {
-            datetime(2023, 4, 3, 0, 0): 2,
-            datetime(2023, 4, 10, 0, 0): 1,
-            datetime(2023, 4, 17, 0, 0): 0,
-            datetime(2023, 4, 24, 0, 0): 1,
-            datetime(2023, 5, 1, 0, 0): 1,
-            datetime(2023, 5, 8, 0, 0): 1,
-            datetime(2023, 5, 15, 0, 0): 1,
-            datetime(2023, 5, 22, 0, 0): 1,
-            datetime(2023, 5, 29, 0, 0): 1,
-            datetime(2023, 6, 5, 0, 0): 0,
-            datetime(2023, 6, 12, 0, 0): 1,
+            datetime(2023, 4, 3): 2,
+            datetime(2023, 4, 10): 1,
+            datetime(2023, 4, 17): 0,
+            datetime(2023, 4, 24): 1,
+            datetime(2023, 5, 1): 1,
+            datetime(2023, 5, 8): 1,
+            datetime(2023, 5, 15): 1,
+            datetime(2023, 5, 22): 1,
+            datetime(2023, 5, 29): 1,
+            datetime(2023, 6, 5): 0,
+            datetime(2023, 6, 12): 1,
         }
-
-        args = {}
         self.assertEqual(org.per_week(args), expected)
 
+        # termstart same as first actual ticket date
+        args = {"termstart": datetime(2023, 4, 4)}
+        self.assertEqual(org.per_week(args), expected)
+
+        # different termstart
+        args = {"termstart": datetime(2023, 5, 4)}
+        expected = {
+            datetime(2023, 5, 1): 1,
+            datetime(2023, 5, 8): 1,
+            datetime(2023, 5, 15): 1,
+            datetime(2023, 5, 22): 1,
+            datetime(2023, 5, 29): 1,
+            datetime(2023, 6, 5): 0,
+            datetime(2023, 6, 12): 1,
+            datetime(2023, 6, 19): 0,
+            datetime(2023, 6, 26): 0,
+            datetime(2023, 7, 3): 0,
+            datetime(2023, 7, 10): 0,
+        }
+
+        # termstart and weeks specified
+        args = {"termstart": datetime(2023, 5, 4), "weeks": 5}
+        expected = {
+            datetime(2023, 5, 1): 1,
+            datetime(2023, 5, 8): 1,
+            datetime(2023, 5, 15): 1,
+            datetime(2023, 5, 22): 1,
+            datetime(2023, 5, 29): 1,
+        }
+        self.assertEqual(org.per_week(args), expected)
+
+        # termstart and termend specified
+        args = {"termstart": datetime(2023, 5, 4), "termend": datetime(2023, 6, 29)}
+        expected = {
+            datetime(2023, 5, 1): 1,
+            datetime(2023, 5, 8): 1,
+            datetime(2023, 5, 15): 1,
+            datetime(2023, 5, 22): 1,
+            datetime(2023, 5, 29): 1,
+            datetime(2023, 6, 5): 0,
+            datetime(2023, 6, 12): 1,
+            datetime(2023, 6, 19): 0,
+            datetime(2023, 6, 26): 0,
+        }
+        self.assertEqual(org.per_week(args), expected)
+
+        # with building filter
+        args = {"termend": datetime(2023, 6, 29), "building": org.find_building("Building3")}
+        expected = {
+            datetime(2023, 4, 3): 0,
+            datetime(2023, 4, 10): 0,
+            datetime(2023, 4, 17): 0,
+            datetime(2023, 4, 24): 0,
+            datetime(2023, 5, 1): 1,
+            datetime(2023, 5, 8): 1,
+            datetime(2023, 5, 15): 1,
+            datetime(2023, 5, 22): 1,
+            datetime(2023, 5, 29): 1,
+            datetime(2023, 6, 5): 0,
+            datetime(2023, 6, 12): 1,
+            datetime(2023, 6, 19): 0,
+            datetime(2023, 6, 26): 0,
+        }
+        self.assertEqual(org.per_week(args), expected)
+
+        # ensure weeks are given 0 and never omitted
+        args = {"termstart": datetime(1970, 1, 1)}
+        expected = {
+            datetime(1969, 12, 29): 0,
+            datetime(1970, 1, 5): 0,
+            datetime(1970, 1, 12): 0,
+            datetime(1970, 1, 19): 0,
+            datetime(1970, 1, 26): 0,
+            datetime(1970, 2, 2): 0,
+            datetime(1970, 2, 9): 0,
+            datetime(1970, 2, 16): 0,
+            datetime(1970, 2, 23): 0,
+            datetime(1970, 3, 2): 0,
+            datetime(1970, 3, 9): 0,
+        }
+        self.assertEqual(org.per_week(args), expected)
+
+    def test_per_building(self):
+        """
+        Test cases for per_building() method.
+        """
+        # setup
+        org = Organization()
+        report = Report("unit-testing/querytests1.csv")
+        report.populate(org)
+        building1 = org.find_building("Building1")
+        building2 = org.find_building("Building2")
+        building3 = org.find_building("Building3")
+
+        # no args
+        args: dict = {}
+        expected: dict[Building, int] = {
+            building1: 1,
+            building2: 3,
+            building3: 6
+        }
+        self.assertEqual(org.per_building(args), expected)
+
+        # with termstart
+        args = {"termstart": datetime(2023, 4, 23)}
+        expected = {
+            building1: 0,
+            building2: 1,
+            building3: 6
+        }
+        self.assertEqual(org.per_building(args), expected)
+
+        # with termstart and termend
+        args = {"termstart": datetime(2023, 4, 10), "termend": datetime(2023, 4, 30)}
+        expected = {
+            building1: 0,
+            building2: 2,
+            building3: 0
+        }
+        self.assertEqual(org.per_building(args), expected)
 
 class TestCli(unittest.TestCase):
     """
