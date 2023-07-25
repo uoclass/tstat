@@ -299,6 +299,9 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
     term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
+    # make term_end inclusive of last day
+    if term_end:
+        term_end += timedelta(days=1)
 
     filtered: list[Ticket] = []
     for ticket in tickets:
