@@ -400,9 +400,146 @@ class TestQueries(unittest.TestCase):
         }
         self.assertEqual(org.per_building(args), expected)
 
+    def test_per_room(self):
+        """
+        Test cases for per_room() method.
+        """
+        # setup
+        org = Organization()
+        report = Report("unit-testing/querytests1.csv")
+        report.populate(org)
+        building1 = org.find_building("Building1")
+        building2 = org.find_building("Building2")
+        building3 = org.find_building("Building3")
+
+        # no args
+        args: dict = {}
+        expected = {
+            building1.rooms["1"]: 1,
+            building2.rooms["1"]: 1,
+            building2.rooms["2"]: 2,
+            building3.rooms["1"]: 1,
+            building3.rooms["2"]: 1,
+            building3.rooms["3"]: 2,
+            building3.rooms["4"]: 1,
+            building3.rooms["5"]: 1,
+        }
+        self.assertEqual(org.per_room(args), expected)
+
+        # building filter
+        args = {"building": building3}
+        expected = {
+            building3.rooms["1"]: 1,
+            building3.rooms["2"]: 1,
+            building3.rooms["3"]: 2,
+            building3.rooms["4"]: 1,
+            building3.rooms["5"]: 1,
+        }
+        self.assertEqual(org.per_room(args), expected)
+
+        # with termstart
+        args = {"termstart": datetime(2023, 4, 12)}
+        expected = {
+            building1.rooms["1"]: 0,
+            building2.rooms["1"]: 0,
+            building2.rooms["2"]: 1,
+            building3.rooms["1"]: 1,
+            building3.rooms["2"]: 1,
+            building3.rooms["3"]: 2,
+            building3.rooms["4"]: 1,
+            building3.rooms["5"]: 1,
+        }
+        self.assertEqual(org.per_room(args), expected)
+
+        # with termstart and termend
+        args = {"termstart": datetime(2023, 4, 12), "termend": datetime(2023, 5, 23)}
+        expected = {
+            building1.rooms["1"]: 0,
+            building2.rooms["1"]: 0,
+            building2.rooms["2"]: 1,
+            building3.rooms["1"]: 1,
+            building3.rooms["2"]: 1,
+            building3.rooms["3"]: 2,
+            building3.rooms["4"]: 0,
+            building3.rooms["5"]: 0,
+        }
+        self.assertEqual(org.per_room(args), expected)
+
+        # with termstart, termend, and building
+        args = {
+            "termstart": datetime(2023, 5, 8),
+            "termend": datetime(2023, 5, 29),
+            "building": org.find_building("Building2")
+        }
+        expected = {
+            building3.rooms["1"]: 0,
+            building3.rooms["2"]: 1,
+            building3.rooms["3"]: 2,
+            building3.rooms["4"]: 1,
+            building3.rooms["5"]: 0,
+        }
+
+    def test_per_requestor(self):
+        """
+        Test cases for per_requestor() method.
+        """
+        # setup
+        org = Organization()
+        report = Report("unit-testing/querytests1.csv")
+        report.populate(org)
+        requestor1 = org.find_user("requestor1@example.com")
+        requestor2 = org.find_user("requestor2@example.com")
+        requestor3 = org.find_user("requestor3@example.com")
+
+        # no args
+        args: dict = {}
+        expected = {
+            requestor1: 5,
+            requestor2: 3,
+            requestor3: 2
+        }
+        self.assertEqual(org.per_requestor(args), expected)
+
+        # with building filter
+        args = {"building": org.find_building("Building3")}
+        expected = {
+            requestor1: 1,
+            requestor2: 3,
+            requestor3: 2
+        }
+        self.assertEqual(org.per_requestor(args), expected)
+
+        # with termstart
+        args = {"termstart": datetime(2023, 4, 20)}
+        expected = {
+            requestor1: 2,
+            requestor2: 3,
+            requestor3: 2
+        }
+        self.assertEqual(org.per_requestor(args), expected)
+
+        # with termstart and termend
+        args = {"termstart": datetime(2023, 4, 20), "termend": datetime(2023, 5, 27)}
+        expected = {
+            requestor1: 2,
+            requestor2: 3,
+            requestor3: 0
+        }
+        self.assertEqual(org.per_requestor(args), expected)
+
+        # with termstart, termend, and building filter
+        args = {"termstart": datetime(2023, 4, 20), "termend": datetime(2023, 5, 27), "building": org.find_building("Building2")}
+        expected = {
+            requestor1: 1,
+            requestor2: 0,
+            requestor3: 0
+        }
+        self.assertEqual(org.per_requestor(args), expected)
+
+
 class TestCli(unittest.TestCase):
     """
-    Test cases for command line interface in py.
+    Test cases for command line interface in cli.py.
     """
 
     def test_no_args(self):
