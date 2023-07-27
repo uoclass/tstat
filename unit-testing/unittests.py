@@ -15,7 +15,7 @@ from cli import *
 class TestOrganization(unittest.TestCase):
     """
     Test cases for the organization.py,
-    Specifically the Organization class.
+    The Organization class and helper functions.
     """
 
     def test_add_new_ticket(self):
@@ -245,6 +245,75 @@ class TestOrganization(unittest.TestCase):
         self.assertTrue(isinstance(real_room.building, Building))
         self.assertEqual(real_room.identifier, "Some Room")
         self.assertEqual(real_room.building.name, "Some Building")
+
+    def test_get_modnay(self):
+        """
+        Test cases for get_monday() helper function.
+        """
+        self.assertEqual(get_monday(datetime(2023, 7, 27),), datetime(2023, 7, 24))
+        self.assertEqual(get_monday(datetime(2023, 6, 26),), datetime(2023, 6, 26))
+        self.assertEqual(get_monday(datetime(2023, 7, 23),), datetime(2023, 7, 17))
+
+    def test_filter_tickets(self):
+        """
+        Test cases for filter_tickets() helper function.
+        """
+        # set up
+        report = Report("unit-testing/querytests1.csv")
+        org = Organization()
+        report.populate(org)
+        args: dict = {
+            "termstart": datetime(2023, 4, 11),
+            "termend": datetime(2023, 5, 29),
+            "building": org.find_building("Building3")
+        }
+        ticket_dict: dict[int, Ticket] = org.tickets
+        ticket_list: list[Ticket] = list(org.tickets.values())
+
+        # termstart and termend filters
+        expected: list = [
+            org.tickets[2],
+            org.tickets[3],
+            org.tickets[4],
+            org.tickets[5],
+            org.tickets[6],
+            org.tickets[7],
+            org.tickets[8]
+        ]
+        for type in [ticket_dict, ticket_list]:
+            # update the exclude list below once more filters added
+            filtered: list[Ticket] = filter_tickets(type, args, ["building"])
+            self.assertEqual(filtered, expected)
+
+        # building filter
+        expected: list = [
+            org.tickets[4],
+            org.tickets[5],
+            org.tickets[6],
+            org.tickets[7],
+            org.tickets[8],
+            org.tickets[9]
+
+        ]
+        for type in [ticket_dict, ticket_list]:
+            # update the exclude list below once more filters added
+            filtered: list[Ticket] = filter_tickets(type, args, ["termstart", "termend"])
+            self.assertEqual(filtered, expected)
+
+        # termstart, termend, and building filters
+        expected: list = [
+            org.tickets[4],
+            org.tickets[5],
+            org.tickets[6],
+            org.tickets[7],
+            org.tickets[8],
+
+        ]
+        for type in [ticket_dict, ticket_list]:
+            # update the exclude list below once more filters added
+            filtered: list[Ticket] = filter_tickets(type, args)
+            self.assertEqual(filtered, expected)
+
 
 class TestQueries(unittest.TestCase):
     """
