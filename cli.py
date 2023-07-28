@@ -21,7 +21,7 @@ from visual import *
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"]
 DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%m.%y"]
-QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor"]
+QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor", "showtickets"]
 DEFAULT_TRACEBACK = 0
 DEBUG_TRACEBACK = 3
 
@@ -168,6 +168,7 @@ def parser_setup():
     query_group.add_argument("--perbuilding", action="store_true", help="Show tickets per building")
     query_group.add_argument("--perroom", action="store_true", help="Show tickets per room in a specified building.")
     query_group.add_argument("--perrequestor", action="store_true", help="Show ticket counts by requestor.")
+    query_group.add_argument("-s", "--showtickets", action="store_true", help="Show info for all tickets matching filters")
     return parser
 
 
@@ -197,6 +198,11 @@ def run_query(args: dict, org: Organization) -> dict:
         if not args.get("nographics"):
             view_per_requestor(tickets_per_requestor, args)
         return tickets_per_requestor
+    if query_type == "showtickets":
+        tickets_matched: list[Ticket] = filter_tickets(org.tickets, args)
+        if not args.get("nographics"):
+            view_show_tickets(tickets_matched, args)
+        return tickets_matched
 
 
 def main(argv):

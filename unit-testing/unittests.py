@@ -469,6 +469,19 @@ class TestQueries(unittest.TestCase):
         }
         self.assertEqual(org.per_building(args), expected)
 
+    def test_show_tickets(self):
+        """
+        Test cases for show_tickets() method.
+        """
+        # setup
+        report = Report("unit-testing/querytests1.csv")
+        org = Organization()
+        report.populate(org)
+
+        # just check that it filters tickets as normal
+        args: dict = {"querytype": "showtickets", "debug": True, "nographics": True}
+        self.assertEqual(filter_tickets(org.tickets, args), run_query(args, org))
+
     def test_per_room(self):
         """
         Test cases for per_room() method.

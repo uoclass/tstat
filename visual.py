@@ -86,6 +86,22 @@ def view_per_requestor(tickets_per_requestor: dict["User", int], args: dict) -> 
 
     bar_view(requestor_labels, requestor_counts, args)
 
+def view_show_tickets(tickets_matched: list["Ticket"], args: dict) -> None:
+    """
+    Print matched tickets.
+    """
+    # sort by date (newest to oldest)
+    tickets_matched.sort(key=lambda ticket: ticket.created, reverse=True)
+    # crop for head or tail args
+    tickets_matched = crop_tickets(tickets_matched, args)
+    # print remaining tickets
+    print("Matching tickets")
+    print("----------------")
+    for ticket in tickets_matched:
+        print(ticket)
+        print("----------------")
+
+
 def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
     """
     Display a bar chart using given bar labels and bar heights.
@@ -128,6 +144,7 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
 
     pyplot.show()
 
+
 def crop_counts(labels: list[str], counts: list[int], args) -> tuple[list[str], list[int]]:
     """
     Crop counts based on "head" and "tail" values in args.
@@ -140,3 +157,15 @@ def crop_counts(labels: list[str], counts: list[int], args) -> tuple[list[str], 
         return labels[:args["head"]], counts[:args["head"]]
     if args.get("tail"):
         return labels[-args["tail"]:], counts[-args["tail"]:]
+
+def crop_tickets(tickets: list["Ticket"], args) -> list["Ticket"]:
+    """
+    Crop a simple ticket list based on "head" and "tail" values in args.
+    """
+    if args.get("head") is None and args.get("tail") is None:
+        return tickets
+    if args.get("head"):
+        return tickets[:args["head"]]
+    if args.get("tail"):
+        return tickets[-args["tail"]:]
+
