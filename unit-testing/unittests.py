@@ -121,6 +121,14 @@ class TestOrganization(unittest.TestCase):
         my_user: User = org.find_user("realemail@email.net")
         self.assertEqual(my_user, new_user)
 
+        # also works with name or phone or both
+        my_user = org.find_user(name="AJ")
+        self.assertEqual(my_user, new_user)
+        my_user = org.find_user(phone="541541541")
+        self.assertEqual(my_user, new_user)
+        my_user = org.find_user(None, "AJ", "541541541")
+        self.assertEqual(my_user, new_user)
+
         # still returns existing group when create_mode
         same_user: User = org.find_user("realemail@email.net", create_mode=True)
         self.assertEqual(same_user, new_user)
@@ -265,7 +273,8 @@ class TestOrganization(unittest.TestCase):
         args: dict = {
             "termstart": datetime(2023, 4, 11),
             "termend": datetime(2023, 5, 29),
-            "building": org.find_building("Building3")
+            "building": org.find_building("Building3"),
+            "requestor": org.find_user("requestor1@example.com")
         }
         ticket_dict: dict[int, Ticket] = org.tickets
         ticket_list: list[Ticket] = list(org.tickets.values())
@@ -282,36 +291,47 @@ class TestOrganization(unittest.TestCase):
         ]
         for type in [ticket_dict, ticket_list]:
             # update the exclude list below once more filters added
-            filtered: list[Ticket] = filter_tickets(type, args, ["building"])
+            filtered: list[Ticket] = filter_tickets(type, args, ["building", "requestor"])
             self.assertEqual(filtered, expected)
 
         # building filter
-        expected: list = [
+        expected = [
             org.tickets[4],
             org.tickets[5],
             org.tickets[6],
             org.tickets[7],
             org.tickets[8],
             org.tickets[9]
-
         ]
         for type in [ticket_dict, ticket_list]:
             # update the exclude list below once more filters added
-            filtered: list[Ticket] = filter_tickets(type, args, ["termstart", "termend"])
+            filtered: list[Ticket] = filter_tickets(type, args, ["termstart", "termend", "requestor"])
             self.assertEqual(filtered, expected)
 
         # termstart, termend, and building filters
-        expected: list = [
+        expected = [
             org.tickets[4],
             org.tickets[5],
             org.tickets[6],
             org.tickets[7],
-            org.tickets[8],
-
+            org.tickets[8]
         ]
         for type in [ticket_dict, ticket_list]:
             # update the exclude list below once more filters added
-            filtered: list[Ticket] = filter_tickets(type, args)
+            filtered: list[Ticket] = filter_tickets(type, args, ["requestor"])
+            self.assertEqual(filtered, expected)
+
+        # requestor filter
+        expected = [
+            org.tickets[0],
+            org.tickets[1],
+            org.tickets[2],
+            org.tickets[3],
+            org.tickets[4],
+        ]
+        for type in [ticket_dict, ticket_list]:
+            # update the exclude list below once more filters added
+            filtered: list[Ticket] = filter_tickets(type, args, ["termend", "termstart", "building"])
             self.assertEqual(filtered, expected)
 
 
@@ -413,6 +433,24 @@ class TestQueries(unittest.TestCase):
         }
         self.assertEqual(org.per_week(args), expected)
 
+        # with requestor filter
+        args = {"termend": datetime(2023, 6, 29), "requestor": org.find_user("requestor2@example.com")}
+        expected = {
+            datetime(2023, 4, 3): 0,
+            datetime(2023, 4, 10): 0,
+            datetime(2023, 4, 17): 0,
+            datetime(2023, 4, 24): 0,
+            datetime(2023, 5, 1): 0,
+            datetime(2023, 5, 8): 1,
+            datetime(2023, 5, 15): 1,
+            datetime(2023, 5, 22): 1,
+            datetime(2023, 5, 29): 0,
+            datetime(2023, 6, 5): 0,
+            datetime(2023, 6, 12): 0,
+            datetime(2023, 6, 19): 0,
+            datetime(2023, 6, 26): 0,
+        }
+
         # ensure weeks are given 0 and never omitted
         args = {"termstart": datetime(1970, 1, 1)}
         expected = {
@@ -469,6 +507,15 @@ class TestQueries(unittest.TestCase):
         }
         self.assertEqual(org.per_building(args), expected)
 
+        # with requestor filter
+        args = {"requestor": org.find_user("requestor1@example.com")}
+        expected = {
+            building1: 1,
+            building2: 3,
+            building3: 1,
+        }
+        self.assertEqual(org.per_building(args), expected)
+
     def test_show_tickets(self):
         """
         Test cases for show_tickets() method.
@@ -516,6 +563,20 @@ class TestQueries(unittest.TestCase):
             building3.rooms["3"]: 2,
             building3.rooms["4"]: 1,
             building3.rooms["5"]: 1,
+        }
+        self.assertEqual(org.per_room(args), expected)
+
+        # requestor filter
+        args = {"requestor": org.find_user("requestor1@example.com")}
+        expected = {
+            building1.rooms["1"]: 1,
+            building2.rooms["1"]: 1,
+            building2.rooms["2"]: 2,
+            building3.rooms["1"]: 1,
+            building3.rooms["2"]: 0,
+            building3.rooms["3"]: 0,
+            building3.rooms["4"]: 0,
+            building3.rooms["5"]: 0
         }
         self.assertEqual(org.per_room(args), expected)
 
@@ -569,9 +630,9 @@ class TestQueries(unittest.TestCase):
         org = Organization()
         report = Report("unit-testing/querytests1.csv")
         report.populate(org)
-        requestor1 = org.find_user("requestor1@example.com")
-        requestor2 = org.find_user("requestor2@example.com")
-        requestor3 = org.find_user("requestor3@example.com")
+        requestor1: User = org.find_user("requestor1@example.com")
+        requestor2: User = org.find_user("requestor2@example.com")
+        requestor3: User = org.find_user("requestor3@example.com")
 
         # no args
         args: dict = {}
@@ -709,6 +770,10 @@ class TestCli(unittest.TestCase):
         self.assertRaises(BadArgError, main, argv)
         # pass -w and -e at once
         argv = ["--perweek", "-w", "10", "-e", "12/31/2023", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
+
+        # perrequestor stipulations
+        args = {"--perrequestor", "--requestor", "requestor1@example.com", "unit-testing/minimal.csv"}
         self.assertRaises(BadArgError, main, argv)
 
     def test_clean_args(self):

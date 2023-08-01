@@ -90,16 +90,20 @@ def check_options(args: dict) -> None:
         raise BadArgError(f"Cannot pass --tail {args['tail']}, pass at least 1")
 
     # Stipulations for --perbuilding
-    if args.get("perbuilding") and args.get("building"):
+    if args["querytype"] == "perbuilding" and args.get("building"):
         raise BadArgError("Cannot filter to a single building in in a --perbuilding query")
 
     # Stipulations for --perweek
-    if not args.get("perweek") and args.get("weeks") != None:
+    if args["querytype"] != "perweek" and args.get("weeks") is not None:
         raise BadArgError("Cannot pass --weeks without --perweek")
     if args.get("weeks") and args.get("termend"):
         raise BadArgError("Cannot pass --weeks and --termend simultaneously")
     if args.get("weeks") is not None and args.get("weeks") < 1:
         raise BadArgError(f"Cannot pass --weeks {args['weeks']}, use at least 1 week")
+
+    # Stipulations for --perrequestor
+    if args["querytype"] == "perrequestor" and args.get("requestor"):
+        raise BadArgError("Cannot pass --requestor filter with --perrequestor query")
 
 
 def clean_args(args: dict, org: Organization) -> None:
@@ -118,6 +122,10 @@ def clean_args(args: dict, org: Organization) -> None:
         args["building"] = org.find_building(args["building"])
         if not args["building"]:
             raise BadArgError("No such building found in report")
+    if args.get("requestor"):
+        args["requestor"] = org.find_user(args["requestor"])
+        if not args["requestor"]:
+            raise BadArgError("No such requestor found in report")
 
 
 def check_report(args: dict, report: Report) -> None:
@@ -158,6 +166,7 @@ def parser_setup():
                         help="Exclude tickets after this date (calendar week for --perweek)")
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term for --perweek")
     parser.add_argument("-b", "--building", type=str, help="Specify building filter.")
+    parser.add_argument("-u", "--requestor", type=str, help="Specify requestor filter.")
     # result cropping
     crop_group = parser.add_mutually_exclusive_group(required=False)
     crop_group.add_argument("--head", type=int, help="Show only first X entries from query results")

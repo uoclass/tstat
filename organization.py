@@ -21,6 +21,7 @@ from ticketclasses import *
 DEFAULT_WEEKS = 11
 DEFAULT_REQUESTORS = 15
 
+
 class Organization:
     """
     Class representing the internal workings of an organization.
@@ -101,22 +102,41 @@ tickets: {len(self.tickets)}"""
             return self.groups[name]
         return None
 
-    def find_user(self, email: str = "Undefined",
-                  name: str = "Undefined",
-                  phone: str = "Undefined",
-                  create_mode: bool = False) -> User:
+    def find_user(self, email: str = None, name: str = None, phone: str = None, create_mode: bool = False) -> User:
         """
-        Return user with given email if already exists.
+        Return user with all of given properies, if exists.
+        Provide email for fast result (hash lookup).
+        Giving only name and/or phone is slower (loop).
         Otherwise add new user with given info and return.
         """
-        email = email if email else "Undefined"
-        name = name if name else "Undefined"
-        phone = phone if phone else "Undefined"
-        if self.users.get(email):
-            return self.users[email]
+        # fast lookup via email
+        if email:
+            found: User = self.users.get(email)
+            if found and \
+                (not name or found.name == name) and \
+                (not phone or found.phone == phone):
+                return self.users[email]
+        elif name or phone:
+            # no email, try looping
+            for key in self.users:
+                current: User = self.users[key]
+                if email and current.email != email:
+                    continue
+                if name and current.name != name:
+                    continue
+                if phone and current.phone != phone:
+                    continue
+                return current
+
+        # nothing found, so create if allowed
         if create_mode:
+            email = email if email else "Undefined"
+            name = name if name else "Undefined"
+            phone = phone if phone else "Undefined"
             self.users[email] = User(email, name, phone)
             return self.users[email]
+
+        # nothing found and no creating
         return None
 
     def find_department(self, name: str = "Undefined", create_mode: bool = False) -> Department:
@@ -274,6 +294,7 @@ tickets: {len(self.tickets)}"""
         # return dict of counts per requestor
         return requestor_count
 
+
 # Helper functions
 
 def get_monday(date: datetime):
@@ -299,6 +320,7 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
     term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
+    requestor: User = None if "requestor" in exclude else args.get("requestor")
     # make term_end inclusive of last day
     if term_end:
         term_end += timedelta(days=1)
@@ -306,6 +328,8 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     filtered: list[Ticket] = []
     for ticket in tickets:
         if building and ticket.room.building != building:
+            continue
+        if requestor and ticket.requestor != requestor:
             continue
         if term_start and ticket.created < term_start:
             continue
