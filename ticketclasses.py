@@ -114,6 +114,28 @@ class Status(Enum):
     OTHER = 6
 
 
+class Diagnosis(Enum):
+    ROOM_CAMERA = "HyFlex/Room Camera"
+    DISC_PLAYER = "Blu-Ray/DVD Player"
+    TOUCH_PANEL = "Touch Panel"
+    DOC_CAM = "Document Camera"
+    CABLE_HDMI = "Cable--HDMI"
+    CABLE_ETHERNET = "Cable-Ethernet"
+    CABLE_MISC = "Cable-Other (describe below)"
+    MICROPHONE = "Microphone"
+    ALS = "Assistive Listening Device"
+    PROJECTOR = "Projector"
+    TV_DISPLAY = "TV Display"
+    TRANSCIEVER = "Transmitter/Receiver"
+    DM_CONTROLLER = "DM Controller"
+    SCALER = "Scaler"
+    NETWORK_SWITCH = "Network Switch"
+    POWER_STRIP = "Power Strip/Surge Protector"
+    USER_ERROR = "User Error"
+    UNSUPPORTED = "Not a Classroom Support Issue"
+    SPAM = "Spam Call"
+    OTHER = "Other (provide description below)"
+
 class Ticket:
     id: int
     title: str
@@ -123,6 +145,7 @@ class Ticket:
     room: Room
     created: datetime
     modified: datetime
+    diagnosis: list[Diagnosis]
     status: Status
 
     def __init__(self) -> None:
@@ -134,9 +157,20 @@ class Ticket:
         self.room = None
         self.created = None
         self.modified = None
+        self.diagnoses = []
         self.status = None
 
     def __str__(self) -> str:
+        # diagnoses
+        diagnoses_string: str = ""
+        if len(self.diagnoses) == 0:
+            diagnoses_string = "None given"
+        else:
+            for i in range(len(self.diagnoses)):
+                if i == 0:
+                    diagnoses_string += self.diagnoses[i].value
+                else:
+                    diagnoses_string += f", {self.diagnoses[i].value}"
         return f"""{self.title}
 {TICKET_URL}{self.id}
 ID: {self.id}
@@ -146,6 +180,7 @@ Department: {self.department}
 Room: {self.room}
 Created: {self.created}
 Modified: {self.modified}
+Diagnoses: {diagnoses_string}
 Status: {self.status}"""
 
     def __repr__(self) -> str:

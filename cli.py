@@ -10,6 +10,8 @@ Passes a dictionary with info to appropriate files or functions.
 """
 
 # import libraries
+import os
+import sys
 import argparse
 import datetime
 
@@ -181,7 +183,7 @@ def parser_setup():
     return parser
 
 
-def run_query(args: dict, org: Organization) -> dict:
+def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
     """
     Run query with given args on given org.
     Return results, call appropriate visual.py function.

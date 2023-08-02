@@ -8,23 +8,24 @@ from the information in a given report.
 """
 
 # Packages
-from datetime import *
+import sys
 import csv
 import typing
 
 # Files
 from organization import *
+from ticketclasses import *
+
 
 # Constants
 STANDARD_FIELDS = ["ID", "Title", "Resp Group", "Requestor", "Requestor Email", "Requestor Phone", "Acct/Dept",
-                   "Class Support Building", "Room number", "Created", "Modified", "Status"]
+                   "Class Support Building", "Room number", "Classroom Problem Types", "Created", "Modified", "Status"]
 TIME_FORMATS: list[str] = [
     # 12 hour
     "%Y-%m-%d %H:%M", "%m/%d/%Y %H:%M", "%m/%d/%y %H:%M", "%d.%m.%Y %H:%M", "%d.%m.%y %H:%M",
     # 24 hour
     "%Y-%m-%d %I:%M %p", "%m/%d/%Y %I:%M %p", "%m/%d/%y %I:%M %p", "%d.%m.%Y %I:%M %p", "%d.%m.%y %I:%M %p"
 ]
-
 
 class BadReportError(ValueError):
     """
@@ -72,7 +73,10 @@ class Report:
     def clean_ticket_dict(self, csv_ticket: dict) -> None:
         """
         Given a dict representing a CSV row, convert to valid ticket dict.
-        i.e. ID, Created, and Modified are not strings.
+        A valid ticket dict contains appropriate objects instead of strings
+        (e.g. datetime for "Created" and "Modified", int for "ID")
+        Except when those objects are specific to on-campus entities
+        (e.g. Buildings, Users, and Groups are kept as strings)
         """
         # ID should be an int
         csv_ticket["ID"] = int(csv_ticket["ID"]) if csv_ticket.get("ID") else 0
@@ -81,6 +85,21 @@ class Report:
             csv_ticket["Created"] = datetime.strptime(csv_ticket["Created"], self.time_format)
         if csv_ticket.get("Modified"):
             csv_ticket["Modified"] = datetime.strptime(csv_ticket["Modified"], self.time_format)
+        # Classroom Problem Types should be Diagnosis Enums
+        if csv_ticket.get("Classroom Problem Types"):
+            diagnoses: list[Diagnosis] = []
+            problem_types: list[str] = csv_ticket["Classroom Problem Types"].split(", ")
+            for type in problem_types:
+                valid: bool = True
+                try:
+                    diagnoses.append(Diagnosis(type))
+                except ValueError:
+                    valid = False
+                if not valid:
+                    raise BadReportError(f"Unknown Classroom Problem Type {type}")
+            csv_ticket["Classroom Problem Types"] = diagnoses
+        else:
+            csv_ticket["Classroom Problem Types"] = []
 
 
 # Helper functions

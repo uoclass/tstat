@@ -884,6 +884,7 @@ class TestReport(unittest.TestCase):
                             "Acct/Dept": "Based Department",
                             "Class Support Building": "The Building",
                             "Room number": "111",
+                            "Classroom Problem Types": "Cable--HDMI, Touch Panel",
                             "Created": "7/14/2023 10:41",
                             "Modified": "7/14/2023 10:41",
                             "Status": "Closed"}
@@ -896,6 +897,7 @@ class TestReport(unittest.TestCase):
                           "Acct/Dept": "Based Department",
                           "Class Support Building": "The Building",
                           "Room number": "111",
+                          "Classroom Problem Types": [Diagnosis.CABLE_HDMI, Diagnosis.TOUCH_PANEL],
                           "Created": datetime(2023, 7, 14, 10, 41),
                           "Modified": datetime(2023, 7, 14, 10, 41),
                           "Status": "Closed"}
@@ -910,7 +912,7 @@ class TestReport(unittest.TestCase):
         full_report: Report = Report("unit-testing/minimal.csv")
         self.assertEqual(full_report.fields_present, ["ID", "Title", "Resp Group", "Requestor", "Requestor Email",
                                                  "Requestor Phone", "Acct/Dept", "Class Support Building",
-                                                 "Room number", "Created", "Modified", "Status"])
+                                                 "Room number", "Classroom Problem Types", "Created", "Modified", "Status"])
         self.assertEqual(full_report.time_format, "%m/%d/%Y %H:%M")
         part_report: Report = Report("unit-testing/missing-fields.csv")
         self.assertEqual(part_report.fields_present, ["ID", "Title", "Resp Group", "Acct/Dept", "Status"])

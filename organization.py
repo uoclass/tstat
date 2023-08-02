@@ -8,10 +8,6 @@ and managing Organization attributes (departments, users, etc.)
 """
 
 # Packages
-import os
-import sys
-from datetime import *
-import io
 from typing import Union
 
 # Files
@@ -81,6 +77,7 @@ tickets: {len(self.tickets)}"""
         new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), create_mode=True)
         new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
                                          ticket_dict.get("Room number"), create_mode=True)
+        new_ticket.diagnoses = ticket_dict.get("Classroom Problem Types")
 
         # add ticket to entities' lists and to org's dict
         self.tickets[new_ticket.id] = new_ticket
