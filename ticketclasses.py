@@ -6,9 +6,13 @@ by Eric Edwards, Alex JPS
 Class definitions for tickets, users, rooms, etc.
 """
 
+# Constants
+TICKET_URL = "https://service.uoregon.edu/TDNext/Apps/430/Tickets/TicketDet.aspx?TicketID="
+
 # Packages
 from datetime import *
-from enum import * 
+from enum import *
+
 
 class Building:
     name: str
@@ -23,7 +27,8 @@ class Building:
 
     def __repr__(self) -> str:
         return f"Building({self.name})"
-    
+
+
 class Room:
     building: Building
     identifier: str
@@ -35,10 +40,11 @@ class Room:
         self.tickets = []
 
     def __str__(self) -> str:
-        return f"Room {self.building.name} {self.identifier}"
+        return f"{self.building.name} {self.identifier}"
 
     def __repr__(self) -> str:
         return f"Room({self.building.name}, {self.identifier})"
+
 
 class User:
     """
@@ -50,16 +56,17 @@ class User:
     tickets: list["Ticket"]
 
     def __init__(self, email, name, phone) -> None:
-       self.email = email
-       self.name = name
-       self.phone = phone
-       self.tickets = []
+        self.email = email
+        self.name = name
+        self.phone = phone
+        self.tickets = []
 
     def __str__(self) -> str:
-        return f"User {self.email} with name {self.name}"
+        return f"{self.name} ({self.email}, {self.phone})"
 
     def __repr__(self) -> str:
-        return f"User({self.email}, {self.name})"
+        return f"User({self.email}, {self.name}, {self.phone})"
+
 
 class Group:
     """
@@ -73,10 +80,11 @@ class Group:
         self.tickets = []
 
     def __str__(self) -> str:
-        return f"Group {self.name}"
+        return f"{self.name}"
 
     def __repr__(self) -> str:
         return f"Group({self.name})"
+
 
 class Department:
     """
@@ -90,10 +98,11 @@ class Department:
         self.tickets = []
 
     def __str__(self) -> str:
-        return f"Department {self.name}"
+        return f"{self.name}"
 
     def __repr__(self) -> str:
         return f"Department({self.name})"
+
 
 class Status(Enum):
     CLOSED = 0
@@ -103,6 +112,7 @@ class Status(Enum):
     ON_HOLD = 4
     SCHEDULED = 5
     OTHER = 6
+
 
 class Ticket:
     id: int
@@ -125,18 +135,18 @@ class Ticket:
         self.created = None
         self.modified = None
         self.status = None
-        
+
     def __str__(self) -> str:
         return f"""{self.title}
+{TICKET_URL}{self.id}
 ID: {self.id}
-Responsible: {self.responsible.name}
-Requestor: {self.requestor.name}
-Department: {self.department.name}
-Room: {self.room.building.name} {self.room.identifier}
+Responsible: {self.responsible}
+Requestor: {self.requestor}
+Department: {self.department}
+Room: {self.room}
 Created: {self.created}
 Modified: {self.modified}
 Status: {self.status}"""
 
     def __repr__(self) -> str:
         return self.__str__()
-
