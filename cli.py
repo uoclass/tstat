@@ -137,6 +137,12 @@ def clean_args(args: dict, org: Organization) -> None:
             raise BadArgError("No such requestor found in report")
         args["requestor"] = requestor
 
+    # split up diagnoses list
+    if args.get("diagnoses"):
+        args["diagnoses"] = args["diagnoses"].split(", ")
+    if args.get("anddiagnoses"):
+        args["anddiagnoses"] = args["anddiagnoses"].split(", ")
+
 
 def check_report(args: dict, report: Report) -> None:
     """
@@ -177,6 +183,10 @@ def parser_setup():
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term for --perweek")
     parser.add_argument("-b", "--building", type=str, help="Specify building filter.")
     parser.add_argument("-u", "--requestor", type=str, help="Specify requestor filter.")
+    # two possible diagnoses filters (OR search, AND search)
+    diag_group = parser.add_mutually_exclusive_group(required=False)
+    diag_group.add_argument("-d", "--diagnoses", type=str, help="Specify diagnoses 'OR' filter, comma-separated.")
+    diag_group.add_argument("--anddiagnoses", type=str, help="Specify diagnoses 'AND' filter, comma-separated.")
     # result cropping
     crop_group = parser.add_mutually_exclusive_group(required=False)
     crop_group.add_argument("--head", type=int, help="Show only first X entries from query results")

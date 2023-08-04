@@ -318,6 +318,20 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
     requestor: User = None if "requestor" in exclude else args.get("requestor")
+
+    # handle diagnoses
+    diagnoses_strings: list[str] = []
+    diagnoses: list[Diagnosis] = []
+    and_diagnoses: bool
+    if args.get("diagnoses"):
+        and_diagnoses = False
+        diagnoses_strings = args["diagnoses"]
+    if args.get("anddiagnoses"):
+        and_diagnoses = True
+        diagnoses_strings = args["anddiagnoses"]
+    for diagnosis in diagnoses_strings:
+        diagnoses.append(Diagnosis(diagnosis))
+
     # make term_end inclusive of last day
     if term_end:
         term_end += timedelta(days=1)
@@ -332,5 +346,19 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
             continue
         if term_end and ticket.created > term_end:
             continue
+        if diagnoses:
+            if and_diagnoses and not set(diagnoses).issubset(set(ticket.diagnoses)):
+                # all diagnoses must match for AND filter
+                continue
+            if not and_diagnoses:
+                # only one diagnosis must match for OR filter
+                match: bool = False
+                for diagnosis in diagnoses:
+                    if diagnosis in ticket.diagnoses:
+                        match = True
+                        break
+                if not match:
+                    continue
+        # add ticket if it passes all filters
         filtered.append(ticket)
     return filtered

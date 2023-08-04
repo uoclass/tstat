@@ -270,6 +270,7 @@ class TestOrganization(unittest.TestCase):
         report = Report("unit-testing/querytests1.csv")
         org = Organization()
         report.populate(org)
+        # using 4 filters here to test "exclude" arg for filter_tickets()
         args: dict = {
             "termstart": datetime(2023, 4, 11),
             "termend": datetime(2023, 5, 29),
@@ -290,7 +291,7 @@ class TestOrganization(unittest.TestCase):
             org.tickets[8]
         ]
         for type in [ticket_dict, ticket_list]:
-            # update the exclude list below once more filters added
+            # also test exclude list
             filtered: list[Ticket] = filter_tickets(type, args, ["building", "requestor"])
             self.assertEqual(filtered, expected)
 
@@ -304,7 +305,7 @@ class TestOrganization(unittest.TestCase):
             org.tickets[9]
         ]
         for type in [ticket_dict, ticket_list]:
-            # update the exclude list below once more filters added
+            # also test exclude list
             filtered: list[Ticket] = filter_tickets(type, args, ["termstart", "termend", "requestor"])
             self.assertEqual(filtered, expected)
 
@@ -317,7 +318,7 @@ class TestOrganization(unittest.TestCase):
             org.tickets[8]
         ]
         for type in [ticket_dict, ticket_list]:
-            # update the exclude list below once more filters added
+            # also test exclude list
             filtered: list[Ticket] = filter_tickets(type, args, ["requestor"])
             self.assertEqual(filtered, expected)
 
@@ -330,8 +331,44 @@ class TestOrganization(unittest.TestCase):
             org.tickets[4],
         ]
         for type in [ticket_dict, ticket_list]:
-            # update the exclude list below once more filters added
+            # also test exclude list
             filtered: list[Ticket] = filter_tickets(type, args, ["termend", "termstart", "building"])
+            self.assertEqual(filtered, expected)
+
+        # diagnoses filter
+        # one diagnosis (same for "diagnoses" and "anddiagnoses" filters)
+        expected = [
+            org.tickets[0],
+            org.tickets[1]
+        ]
+        args = {"diagnoses": [Diagnosis("Touch Panel")]}
+        for type in [ticket_dict, ticket_list]:
+            filtered: list[Ticket] = filter_tickets(type, args)
+            self.assertEqual(filtered, expected)
+        args = {"anddiagnoses": [Diagnosis("Touch Panel")]}
+        for type in [ticket_dict, ticket_list]:
+            filtered: list[Ticket] = filter_tickets(type, args)
+            self.assertEqual(filtered, expected)
+
+        # multiple diagnoses ("diagnoses" filter)
+        expected = [
+            org.tickets[2],
+            org.tickets[3],
+            org.tickets[4],
+            org.tickets[5]
+        ]
+        args = {"diagnoses": [Diagnosis("Cable--HDMI"), Diagnosis("Cable-Ethernet"), Diagnosis("Projector")]}
+        for type in [ticket_dict, ticket_list]:
+            filtered: list[Ticket] = filter_tickets(type, args)
+            self.assertEqual(filtered, expected)
+
+        # multiple diagnoses ("anddiagnoses" filter)
+        expected = [
+            org.tickets[2],
+        ]
+        args = {"anddiagnoses": [Diagnosis("Cable--HDMI"), Diagnosis("Cable-Ethernet"), Diagnosis("Projector")]}
+        for type in [ticket_dict, ticket_list]:
+            filtered: list[Ticket] = filter_tickets(type, args)
             self.assertEqual(filtered, expected)
 
 
@@ -694,9 +731,9 @@ class TestCli(unittest.TestCase):
 
     def test_debug_flag(self):
         """
-        Ensure traceback is changed by -d flag.
+        Ensure traceback is changed by --debug flag.
         """
-        argv: list[str] = ["-d", "--perweek", "--nographics", "unit-testing/minimal.csv"]
+        argv: list[str] = ["--debug", "--perweek", "--nographics", "unit-testing/minimal.csv"]
         main(argv)
         self.assertEqual(sys.tracebacklimit, DEBUG_TRACEBACK)
 
@@ -734,7 +771,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(datetime(2020, 12, 31), get_datetime("31.12.20"))
 
         # expected errors from main()
-        argv: list[str] = ["-d", "--nographics", "--perweek", "-t", "19700101", "unit-testing/minimal.csv"]
+        argv: list[str] = ["--debug", "--nographics", "--perweek", "-t", "19700101", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
     def test_set_query_type(self):
@@ -756,12 +793,12 @@ class TestCli(unittest.TestCase):
         Test cases for check_options() function.
         Tests main(argv) rather than check_options() directly.
         """
-        # debug stipulations (pass --nographics without -d)
+        # debug stipulations (pass --nographics without --debug)
         argv: list[str] = ["--nographics", "--perweek", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perbuilding stipulations (pass -b with --perbuilding)
-        argv = ["-d", "--nographics", "--perbuilding", "-b", "Lillis", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "--perbuilding", "-b", "Lillis", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perweek stipulations
