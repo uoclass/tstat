@@ -124,10 +124,18 @@ def clean_args(args: dict, org: Organization) -> None:
         args["building"] = org.find_building(args["building"])
         if not args["building"]:
             raise BadArgError("No such building found in report")
+
+    # lookup requestor by email, name, or phone
     if args.get("requestor"):
-        args["requestor"] = org.find_user(args["requestor"])
-        if not args["requestor"]:
+        lookup = args["requestor"]
+        requestor: User = org.find_user(email=lookup)
+        if not requestor:
+            requestor = org.find_user(name=lookup)
+        if not requestor:
+            requestor = org.find_user(phone=lookup)
+        if not requestor:
             raise BadArgError("No such requestor found in report")
+        args["requestor"] = requestor
 
 
 def check_report(args: dict, report: Report) -> None:
@@ -156,11 +164,11 @@ def parser_setup():
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     # debug mode
-    parser.add_argument("-d", "--debug", action="store_true", help="Show traceback for all errors")
+    parser.add_argument("--debug", action="store_true", help="Show traceback for all errors")
+    parser.add_argument("--nographics", action="store_true", help="Print query results but do not show graph")
     # display customization
     parser.add_argument("-n", "--name", type=str, help="Set the name of the plot.")
     parser.add_argument("-c", "--color", choices=COLORS, help="Set the color of the plot.")
-    parser.add_argument("--nographics", action="store_true", help="Print query results but do not show graph")
     # filters
     parser.add_argument("-t", "--termstart", type=str,
                         help="Exclude tickets before this date (calendar week for --perweek)")
