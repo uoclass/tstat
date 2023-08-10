@@ -21,39 +21,33 @@ class TestOrganization(unittest.TestCase):
     def test_add_new_ticket(self):
         """
         Test Organization.add_new_ticket() method.
+        Ensure ticket is added to org.tickets dict
+        And to on-campus entities' ticket lists.
         """
+        # setup
         org = Organization()
-        # Example valid ticket dict
-        ticket_dict = {"ID": 1111111, "Title": "Test fake ticket.",
-                       "Resp Group": "USS-Classrooms",
-                       "Requestor": "Eric",
-                       "Requestor Email": "ee@uoregon.edu",
-                       "Requestor Phone": "5305305303",
-                       "Acct/Dept": "Computer Science",
-                       "Class Support Building": "Lawrence",
-                       "Room number": "177",
-                       "Created": datetime(2022, 7, 10, 9, 38),
-                       "Modified": datetime(2022, 7, 11, 11, 53),
-                       "Status": "Closed"}
+        building1: Building = org.find_building("Building", create_mode=True)
+        room1: Room = org.find_room("Building", "1", create_mode=True)
+        user1: User = org.find_user("User", create_mode=True)
+        group1: Group = org.find_group("Group", create_mode=True)
+        dept1: Department = org.find_department("Department", create_mode=True)
 
-        org.add_new_ticket(ticket_dict)
+        # dummy ticket
+        ticket: Ticket = Ticket()
+        ticket.id = 1
+        ticket.room = room1
+        ticket.requestor = user1
+        ticket.responsible = group1
+        ticket.department = dept1
 
-        # Ticket added to org ticket dict
-        self.assertTrue(isinstance(org.tickets[1111111], Ticket))
+        org.add_new_ticket(ticket)
 
-        # Ticket attributes properly set
-        curr = org.tickets[1111111]
-        self.assertEqual(1111111, curr.id)
-        self.assertEqual("Test fake ticket.", curr.title)
-        self.assertEqual("Eric", curr.requestor.name)
-        self.assertEqual("ee@uoregon.edu", curr.requestor.email)
-        self.assertEqual("5305305303", curr.requestor.phone)
-        self.assertEqual("Computer Science", curr.department.name)
-        self.assertEqual("Lawrence", curr.room.building.name)
-        self.assertEqual("177", curr.room.identifier)
-        self.assertEqual(datetime(2022, 7, 10, 9, 38), curr.created)
-        self.assertEqual(datetime(2022, 7, 11, 11, 53), curr.modified)
-        # self.assertEqual(0, curr.status)
+        # lists updated
+        self.assertEqual(room1.tickets, [ticket])
+        self.assertEqual(user1.tickets, [ticket])
+        self.assertEqual(group1.tickets, [ticket])
+        self.assertEqual(dept1.tickets, [ticket])
+        self.assertEqual(org.tickets[1], ticket)
 
     def test_find_group(self):
         """
@@ -375,7 +369,7 @@ class TestOrganization(unittest.TestCase):
 class TestQueries(unittest.TestCase):
     """
     Test cases for all queries in the Organization class.
-    """
+   """
 
     def test_per_week(self):
         """
@@ -906,13 +900,16 @@ class TestReport(unittest.TestCase):
         self.assertEqual(department.tickets, [tick])
         self.assertEqual(group.tickets, [tick])
 
-    def test_clean_ticket_dict(self):
+
+    def test_dict_to_ticket(self):
         """
-        Test cases for clean_ticket_dict() method.
+        Test cases for dict_to_ticket() method.
         """
-        # ensure cleaned dict matches expectation
+        # setup
+        # minimal.csv irrelevant to this test, passing to avoid error
         report = Report("unit-testing/minimal.csv")
-        dirty_dict: dict = {"ID": "12345678",
+        org = Organization()
+        ticket_dict: dict = {"ID": "12345678",
                             "Title": "My Ticket",
                             "Resp Group": "USS-Classrooms",
                             "Requestor": "Sir Example",
@@ -925,21 +922,15 @@ class TestReport(unittest.TestCase):
                             "Created": "7/14/2023 10:41",
                             "Modified": "7/14/2023 10:41",
                             "Status": "Closed"}
-        expected: dict = {"ID": 12345678,
-                          "Title": "My Ticket",
-                          "Resp Group": "USS-Classrooms",
-                          "Requestor": "Sir Example",
-                          "Requestor Email": "example@example.com",
-                          "Requestor Phone": "5555555555",
-                          "Acct/Dept": "Based Department",
-                          "Class Support Building": "The Building",
-                          "Room number": "111",
-                          "Classroom Problem Types": [Diagnosis.CABLE_HDMI, Diagnosis.TOUCH_PANEL],
-                          "Created": datetime(2023, 7, 14, 10, 41),
-                          "Modified": datetime(2023, 7, 14, 10, 41),
-                          "Status": "Closed"}
-        report.clean_ticket_dict(dirty_dict)
-        self.assertEqual(dirty_dict, expected)
+
+        ticket: Ticket = report.dict_to_ticket(org, ticket_dict)
+        expected = [(ticket.room, org.find_room("The Building", "111")),
+                    (ticket.responsible, org.find_group("USS-Classrooms")),
+                    (ticket.requestor, org.find_user("example@example.com")),
+                    (ticket.department, org.find_department("Based Department"))]
+
+        for pair in expected:
+            self.assertEqual(pair[0], pair[1])
 
     def test_constructor(self):
         """

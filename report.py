@@ -16,7 +16,6 @@ import typing
 from organization import *
 from ticketclasses import *
 
-
 # Constants
 STANDARD_FIELDS = ["ID", "Title", "Resp Group", "Requestor", "Requestor Email", "Requestor Phone", "Acct/Dept",
                    "Class Support Building", "Room number", "Classroom Problem Types", "Created", "Modified", "Status"]
@@ -26,6 +25,7 @@ TIME_FORMATS: list[str] = [
     # 24 hour
     "%Y-%m-%d %I:%M %p", "%m/%d/%Y %I:%M %p", "%m/%d/%y %I:%M %p", "%d.%m.%Y %I:%M %p", "%d.%m.%y %I:%M %p"
 ]
+
 
 class BadReportError(ValueError):
     """
@@ -63,46 +63,66 @@ class Report:
         count: int = 0
         for row in csv_tickets:
             # fix row to be a valid, clean ticket dict
-            self.clean_ticket_dict(row)
-            org.add_new_ticket(row)
+            new_ticket: Ticket = self.dict_to_ticket(org, row)
+            org.add_new_ticket(new_ticket)
             count += 1
         csv_file.close()
         if not count:
             raise BadReportError("Ticket report is empty, exiting...")
 
-    def clean_ticket_dict(self, csv_ticket: dict) -> None:
+    def dict_to_ticket(self, org: Organization, csv_ticket: dict) -> Ticket:
         """
-        Given a dict representing a CSV row, convert to valid ticket dict.
-        A valid ticket dict contains appropriate objects instead of strings
-        (e.g. datetime for "Created" and "Modified", int for "ID")
-        Except when those objects are specific to on-campus entities
-        (e.g. Buildings, Users, and Groups are kept as strings)
+        Given a dict representing a CSV row, convert to valid ticket.
+        This does not add the ticket to the org's tickets dict,
+        Nor does it add the ticket ot the on-campus entities' ticket lists.
         """
+        # new ticket
+        new_ticket: Ticket = Ticket()
+
+        # populate simple attributes
+        new_ticket.title = csv_ticket.get("Title")
+        new_ticket.created = csv_ticket.get("Created")
+        new_ticket.modified = csv_ticket.get("Modified")
+        new_ticket.status = csv_ticket.get("Status")
+
+        # use find methods set these attributes
+        new_ticket.responsible = org.find_group(csv_ticket.get("Resp Group"), create_mode=True)
+        new_ticket.requestor = org.find_user(csv_ticket.get("Requestor Email"),
+                                                  csv_ticket.get("Requestor"),
+                                                  csv_ticket.get("Requestor Phone"), create_mode=True)
+        new_ticket.department = org.find_department(csv_ticket.get("Acct/Dept"), create_mode=True)
+        new_ticket.room = org.find_room(csv_ticket.get("Class Support Building"),
+                                             csv_ticket.get("Room number"), create_mode=True)
+
         # ID should be an int
-        csv_ticket["ID"] = int(csv_ticket["ID"]) if csv_ticket.get("ID") else 0
+        new_ticket.id = int(csv_ticket["ID"]) if csv_ticket.get("ID") else 0
+
         # Created and Modified should be datetime objects
         if csv_ticket.get("Created"):
-            csv_ticket["Created"] = datetime.strptime(csv_ticket["Created"], self.time_format)
+            new_ticket.created = datetime.strptime(csv_ticket["Created"], self.time_format)
         if csv_ticket.get("Modified"):
-            csv_ticket["Modified"] = datetime.strptime(csv_ticket["Modified"], self.time_format)
+            new_ticket.modified = datetime.strptime(csv_ticket["Modified"], self.time_format)
+
         # Classroom Problem Types should be Diagnosis Enums
         if csv_ticket.get("Classroom Problem Types"):
             diagnoses: list[Diagnosis] = []
             problem_types: list[str] = csv_ticket["Classroom Problem Types"].split(", ")
-            for type in problem_types:
+            for problem in problem_types:
                 valid: bool = True
                 try:
-                    diagnoses.append(Diagnosis(type))
+                    diagnoses.append(Diagnosis(problem))
                 except ValueError:
                     valid = False
                 if not valid:
-                    raise BadReportError(f"Unknown Classroom Problem Type {type}")
-            csv_ticket["Classroom Problem Types"] = diagnoses
-        else:
-            csv_ticket["Classroom Problem Types"] = []
+                    raise BadReportError(f"Unknown Classroom Problem Type {problem}")
+            new_ticket.diagnoses = diagnoses
+
+        # return finished ticket
+        return new_ticket
 
 
 # Helper functions
+
 def get_fields_present(csv_ticket: dict) -> Union[list[str], None]:
     """
     Given an arbitrary csv_ticket dict from report,

@@ -46,45 +46,25 @@ tickets: {len(self.tickets)}"""
     def __repr__(self) -> str:
         return self.__str__()
 
-    def add_new_ticket(self, ticket_dict: dict) -> None:
+    def add_new_ticket(self, ticket: Ticket) -> None:
         """
-        Given a valid, clean ticket dict, create a new Ticket object.
-        Add that ticket to self.tickets.
+        Add ticket to self.tickets.
+        And add to lists of tickets from on-campus entities.
         """
-        # check for valid ticket dict
+        # check for valid ticket
         try:
-            assert type(ticket_dict["ID"]) == int
-            assert type(ticket_dict.get("Created")) != str
-            assert type(ticket_dict.get("Modified")) != str
+            assert type(ticket.id) == int
+            assert type(ticket.created) != str
+            assert type(ticket.modified) != str
         except AssertionError:
-            raise ValueError("Organization.add_new_ticket() received invalid ticket dict")
-
-        # create new ticket
-        new_ticket: Ticket = Ticket()
-
-        # populate simple attributes
-        new_ticket.id = ticket_dict.get("ID")
-        new_ticket.title = ticket_dict.get("Title")
-        new_ticket.created = ticket_dict.get("Created")
-        new_ticket.modified = ticket_dict.get("Modified")
-        new_ticket.status = ticket_dict.get("Status")
-
-        # use find methods set these attributes
-        new_ticket.responsible = self.find_group(ticket_dict.get("Resp Group"), create_mode=True)
-        new_ticket.requestor = self.find_user(ticket_dict.get("Requestor Email"),
-                                              ticket_dict.get("Requestor"),
-                                              ticket_dict.get("Requestor Phone"), create_mode=True)
-        new_ticket.department = self.find_department(ticket_dict.get("Acct/Dept"), create_mode=True)
-        new_ticket.room = self.find_room(ticket_dict.get("Class Support Building"),
-                                         ticket_dict.get("Room number"), create_mode=True)
-        new_ticket.diagnoses = ticket_dict.get("Classroom Problem Types")
+            raise ValueError("Organization.add_new_ticket() received invalid ticket")
 
         # add ticket to entities' lists and to org's dict
-        self.tickets[new_ticket.id] = new_ticket
-        new_ticket.room.tickets.append(new_ticket)
-        new_ticket.requestor.tickets.append(new_ticket)
-        new_ticket.responsible.tickets.append(new_ticket)
-        new_ticket.department.tickets.append(new_ticket)
+        self.tickets[ticket.id] = ticket
+        ticket.room.tickets.append(ticket)
+        ticket.requestor.tickets.append(ticket)
+        ticket.responsible.tickets.append(ticket)
+        ticket.department.tickets.append(ticket)
 
     def find_group(self, name: str = "Undefined", create_mode: bool = False) -> Group:
         """
