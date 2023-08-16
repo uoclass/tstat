@@ -14,6 +14,7 @@ import os
 import sys
 import argparse
 import datetime
+import json
 
 # import files
 from report import *
@@ -107,6 +108,10 @@ def check_options(args: dict) -> None:
     if args["querytype"] == "perrequestor" and args.get("requestor"):
         raise BadArgError("Cannot pass --requestor filter with --perrequestor query")
 
+    # Stipulations for --saveconfig
+    if not args.get("saveconfig") and not args.get("localreport"):
+        raise BadArgError("Must specify a report file")
+
 
 def clean_args(args: dict, org: Organization) -> None:
     """
@@ -169,6 +174,11 @@ def parser_setup():
     Return the parser.
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    # file io flags
+    config_group = parser.add_mutually_exclusive_group(required=False)
+    config_group.add_argument("--saveconfig", type=str, help="Save current arguments as a loadable config file with given file name")
+    config_group.add_argument("--config", type=str, help="Load configuration file with filename")
+    parser.add_argument("--localreport", "-l", type=str, help = "Load report csv file")
     # debug mode
     parser.add_argument("--debug", action="store_true", help="Show traceback for all errors")
     parser.add_argument("--nographics", action="store_true", help="Print query results but do not show graph")
@@ -193,6 +203,7 @@ def parser_setup():
     crop_group.add_argument("--tail", type=int, help="Show only last X entries from query results")
     # query presets
     query_group = parser.add_mutually_exclusive_group(required=True)
+    # query_group.add_argument("--querytype", choices=QUERY_TYPES, help="Choose a query type format")
     query_group.add_argument("--perweek", action="store_true", help="Show tickets per week")
     query_group.add_argument("--perbuilding", action="store_true", help="Show tickets per building")
     query_group.add_argument("--perroom", action="store_true", help="Show tickets per room in a specified building.")
@@ -233,6 +244,20 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
             view_show_tickets(tickets_matched, args)
         return tickets_matched
 
+def save_config(args_dict: dict, config_path: str):
+    # remove 'save' argument for config file
+    args_dict.pop("saveconfig")
+
+    # add correct file extension
+    if not config_path.endswith(".json"):
+        config_path += ".json"
+    
+    file = open(config_path, "w+")
+    json.dump(args_dict, file, indent=4)
+
+    print(f"Saved current configuration to {config_path}")
+
+    file.close()
 
 def main(argv):
     """
@@ -246,27 +271,26 @@ def main(argv):
     if len(argv) < 2:
         raise BadArgError("No arguments provided")
 
-    # Check last arg is a valid filename
-    filename: str = argv.pop()
-    filename.strip()
-    check_file(filename)
-
     # set up parsers and parse into dict
     parser: argparse.ArgumentParser = parser_setup()
     args: dict = vars(parser.parse_args(argv))
-
-    # add missing info to args
-    args["filename"] = filename
 
     # set debug mode
     sys.tracebacklimit = DEBUG_TRACEBACK if args.get("debug") else DEFAULT_TRACEBACK
 
     # check for errors in args
+    if args.get("localreport"):
+        check_file(args["localreport"])
     set_query_type(args)
     check_options(args)
 
+    # save config file if requested
+    if args.get("saveconfig"):
+        save_config(args, args["saveconfig"])
+        exit(0)
+
     # check report has enough info for query
-    report = Report(args["filename"])
+    report = Report(args["localreport"])
     check_report(args, report)
 
     # populate organization
