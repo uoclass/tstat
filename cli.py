@@ -96,7 +96,7 @@ def check_options(args: dict) -> None:
         raise BadArgError("Cannot pass --requestor filter with --perrequestor query")
 
     # Stipulations for --saveconfig
-    if not args.get("saveconfig") and not args.get("localreport"):
+    if not (args.get("saveconfig") or args.get("config") or args.get("localreport")):
         raise BadArgError("Must specify a report file")
 
 
@@ -227,8 +227,15 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
         return tickets_matched
 
 def save_config(args_dict: dict, config_path: str):
-    # remove 'save' argument for config file
+    """
+    Save current arguments into loadable JSON configuration file.
+    """
+    
+    # remove unneeded arguments for config file
     args_dict.pop("saveconfig")
+    args_dict.pop("config")
+    args_dict.pop("debug")
+    args_dict.pop("nographics")
 
     # add correct file extension
     if not config_path.endswith(".json"):
@@ -240,6 +247,18 @@ def save_config(args_dict: dict, config_path: str):
     print(f"Saved current configuration to {config_path}")
 
     file.close()
+
+def load_config(args_dict: dict):
+    """
+    Load configuration file.
+    Overwrite json args with user args.
+    """
+    file = open(args_dict.get("config"))
+    json_args = json.load(file)
+
+    for arg in args_dict.keys():
+        if args_dict.get(arg) is None:
+            args_dict[arg] = json_args.get(arg)
 
 def main(argv):
     """
@@ -255,10 +274,14 @@ def main(argv):
 
     # set up parsers and parse into dict
     parser: argparse.ArgumentParser = parser_setup()
+
     args: dict = vars(parser.parse_args(argv))
 
     # set debug mode
     sys.tracebacklimit = DEBUG_TRACEBACK if args.get("debug") else DEFAULT_TRACEBACK
+    
+    if args.get("config"):
+        load_config(args)
 
     # check for errors in args
     if args.get("localreport"):
