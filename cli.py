@@ -63,19 +63,6 @@ def get_datetime(date_text: str):
             continue
     raise BadArgError(f"Date {date_text} not recognized, try yyyy-mm-dd")
 
-
-def set_query_type(args: dict) -> None:
-    """
-    Look at the mutually-exclusive args for query types.
-    Set "querytype" value to the correct one.
-    """
-    for try_type in QUERY_TYPES:
-        if args.get(try_type):
-            if args.get("querytype"):
-                raise BadArgError("Pass exactly one query type argument (e.g. --perweek)")
-            args["querytype"] = try_type
-
-
 def check_options(args: dict) -> None:
     """
     Halt program if conflicting or missing flags given.
@@ -201,14 +188,9 @@ def parser_setup():
     crop_group = parser.add_mutually_exclusive_group(required=False)
     crop_group.add_argument("--head", type=int, help="Show only first X entries from query results")
     crop_group.add_argument("--tail", type=int, help="Show only last X entries from query results")
+    
     # query presets
-    query_group = parser.add_mutually_exclusive_group(required=True)
-    # query_group.add_argument("--querytype", choices=QUERY_TYPES, help="Choose a query type format")
-    query_group.add_argument("--perweek", action="store_true", help="Show tickets per week")
-    query_group.add_argument("--perbuilding", action="store_true", help="Show tickets per building")
-    query_group.add_argument("--perroom", action="store_true", help="Show tickets per room in a specified building.")
-    query_group.add_argument("--perrequestor", action="store_true", help="Show ticket counts by requestor.")
-    query_group.add_argument("-s", "--showtickets", action="store_true", help="Show info for all tickets matching filters")
+    parser.add_argument("-q", "--querytype", choices=QUERY_TYPES, help="Specify query type")
     return parser
 
 
@@ -281,7 +263,6 @@ def main(argv):
     # check for errors in args
     if args.get("localreport"):
         check_file(args["localreport"])
-    set_query_type(args)
     check_options(args)
 
     # save config file if requested

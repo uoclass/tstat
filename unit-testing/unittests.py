@@ -248,7 +248,7 @@ class TestOrganization(unittest.TestCase):
         self.assertEqual(real_room.identifier, "Some Room")
         self.assertEqual(real_room.building.name, "Some Building")
 
-    def test_get_modnay(self):
+    def test_get_monday(self):
         """
         Test cases for get_monday() helper function.
         """
@@ -727,7 +727,7 @@ class TestCli(unittest.TestCase):
         """
         Ensure traceback is changed by --debug flag.
         """
-        argv: list[str] = ["--debug", "--perweek", "--nographics", "unit-testing/minimal.csv"]
+        argv: list[str] = ["--debug", "-q", "perweek", "--nographics", "--localreport", "unit-testing/minimal.csv"]
         main(argv)
         self.assertEqual(sys.tracebacklimit, DEBUG_TRACEBACK)
 
@@ -741,11 +741,11 @@ class TestCli(unittest.TestCase):
         self.assertRaises(BadArgError, check_file, "")
 
         # expected errors from main()
-        argv: list[str] = ["--perweek", "unit-testing/no-file.csv"]
+        argv: list[str] = ["-q", "perweek", "--localreport", "unit-testing/no-file.csv"]
         self.assertRaises(BadArgError, main, argv)
-        argv = ["--perweek", "unit-testing/not-a-csv.txt"]
+        argv = ["-q", "perweek", "--localreport", "unit-testing/not-a-csv.txt"]
         self.assertRaises(BadArgError, main, argv)
-        argv = ["--perweek"]
+        argv = ["-q", "perweek"]
         self.assertRaises(BadArgError, main, argv)
 
     def test_get_datetime(self):
@@ -765,22 +765,8 @@ class TestCli(unittest.TestCase):
         self.assertEqual(datetime(2020, 12, 31), get_datetime("31.12.20"))
 
         # expected errors from main()
-        argv: list[str] = ["--debug", "--nographics", "--perweek", "-t", "19700101", "unit-testing/minimal.csv"]
+        argv: list[str] = ["--debug", "--nographics", "--querytype", "perweek", "-t", "19700101", "--localreport","unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
-
-    def test_set_query_type(self):
-        """
-        Test cases for set_query_type() function.
-        """
-        # dict gets modified
-        args: dict = {"perweek": True}
-        set_query_type(args)
-        self.assertEqual(args["querytype"], "perweek")
-
-        # rejects multiple types
-        args: dict = {"perweek": True, "perbuilding": True}
-        self.assertRaises(BadArgError, set_query_type, args)
-
 
     def test_check_options(self):
         """
@@ -788,23 +774,23 @@ class TestCli(unittest.TestCase):
         Tests main(argv) rather than check_options() directly.
         """
         # debug stipulations (pass --nographics without --debug)
-        argv: list[str] = ["--nographics", "--perweek", "unit-testing/minimal.csv"]
+        argv: list[str] = ["--nographics", "-q", "perweek", "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perbuilding stipulations (pass -b with --perbuilding)
-        argv = ["--debug", "--nographics", "--perbuilding", "-b", "Lillis", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "-q", "perbuilding", "-b", "Lillis", "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perweek stipulations
         # pass -w without --perweek
-        argv = ["--perbuilding", "-w", "10", "unit-testing/minimal.csv"]
+        argv = ["-q", "perbuilding", "-w", "10", "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
         # pass -w and -e at once
-        argv = ["--perweek", "-w", "10", "-e", "12/31/2023", "unit-testing/minimal.csv"]
+        argv = ["-q", "perweek", "-w", "10", "-e", "12/31/2023", "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perrequestor stipulations
-        args = {"--perrequestor", "--requestor", "requestor1@example.com", "unit-testing/minimal.csv"}
+        args = {"-q", "perrequestor", "--requestor", "requestor1@example.com", "--localreport", "unit-testing/minimal.csv"}
         self.assertRaises(BadArgError, main, argv)
 
     def test_clean_args(self):
