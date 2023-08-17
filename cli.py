@@ -71,6 +71,10 @@ def check_options(args: dict) -> None:
     if not args.get("debug") and args.get("nographics"):
         raise BadArgError("Cannot pass --nographics without --debug flag")
 
+    # Must select a querytype if not loading
+    if not args.get("config") and args.get("querytype") not in QUERY_TYPES:
+        raise BadArgError("Must select a query type")
+
     # Query result cropping stipulations
     if args.get("head") is not None and args.get("tail") is not None:
         raise BadArgError("Cannot pass --head and --tail simultaneously")
@@ -161,17 +165,21 @@ def parser_setup():
     Return the parser.
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
+
     # file io flags
     config_group = parser.add_mutually_exclusive_group(required=False)
     config_group.add_argument("--saveconfig", type=str, help="Save current arguments as a loadable config file with given file name")
     config_group.add_argument("--config", type=str, help="Load configuration file with filename")
     parser.add_argument("--localreport", "-l", type=str, help = "Load report csv file")
+
     # debug mode
     parser.add_argument("--debug", action="store_true", help="Show traceback for all errors")
     parser.add_argument("--nographics", action="store_true", help="Print query results but do not show graph")
+
     # display customization
     parser.add_argument("-n", "--name", type=str, help="Set the name of the plot.")
     parser.add_argument("-c", "--color", choices=COLORS, help="Set the color of the plot.")
+
     # filters
     parser.add_argument("-t", "--termstart", type=str,
                         help="Exclude tickets before this date (calendar week for --perweek)")
@@ -180,10 +188,12 @@ def parser_setup():
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term for --perweek")
     parser.add_argument("-b", "--building", type=str, help="Specify building filter.")
     parser.add_argument("-u", "--requestor", type=str, help="Specify requestor filter.")
+
     # two possible diagnoses filters (OR search, AND search)
     diag_group = parser.add_mutually_exclusive_group(required=False)
     diag_group.add_argument("-d", "--diagnoses", type=str, help="Specify diagnoses 'OR' filter, comma-separated.")
     diag_group.add_argument("--anddiagnoses", type=str, help="Specify diagnoses 'AND' filter, comma-separated.")
+
     # result cropping
     crop_group = parser.add_mutually_exclusive_group(required=False)
     crop_group.add_argument("--head", type=int, help="Show only first X entries from query results")
@@ -191,6 +201,7 @@ def parser_setup():
     
     # query presets
     parser.add_argument("-q", "--querytype", choices=QUERY_TYPES, help="Specify query type")
+
     return parser
 
 
