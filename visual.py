@@ -23,22 +23,25 @@ def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
     """
     Display bar chart showing ticket counts per week.
     """
+    weeks: list[datetime]
+    week_counts: list[int]
     # sort keys
     if args.get("head") or args.get("tail"):
-        # sort by count
+        # sort by count, high to low
         sorted_counts = sorted(tickets_per_week.items(), key=lambda item: item[1], reverse=True)
-
+        weeks = [item[0] for item in sorted_counts]
+        week_counts = [item[1] for item in sorted_counts]
     else:
         # sort temporally
-        weeks: list[datetime] = list(tickets_per_week.keys())
+        weeks = list(tickets_per_week.keys())
         weeks.sort()
-        week_counts: list[int] = [tickets_per_week[week] for week in weeks]
+        week_counts = [tickets_per_week[week] for week in weeks]
 
     week_labels: list[str] = []
-    for i in range(len(weeks)):
-        label = f"""W{i+1}\n{datetime.strftime(weeks[i], "%m/%d")}"""
-        if i == 0:
-            label += f"""\n{datetime.strftime(weeks[i], "%Y")}"""
+    first_week = min(weeks)
+    for week in weeks:
+        week_num: int = (week - first_week).days // 7 + 1
+        label = f"""W{week_num}\n{datetime.strftime(week, "%m/%d")}"""
         week_labels.append(label)
 
     bar_view(week_labels, week_counts, args)
