@@ -1,0 +1,15 @@
+{
+    "localreport": null,
+    "name": null,
+    "color": null,
+    "termstart": "5/15/2023",
+    "termend": null,
+    "weeks": 5,
+    "building": "Building3",
+    "requestor": "requestor2@example.com",
+    "diagnoses": null,
+    "anddiagnoses": null,
+    "head": null,
+    "tail": null,
+    "querytype": "perweek"
+}

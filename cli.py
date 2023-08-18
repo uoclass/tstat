@@ -66,6 +66,8 @@ def get_datetime(date_text: str):
 def check_options(args: dict) -> None:
     """
     Halt program if conflicting or missing flags given.
+    This expects a fully completed args dict.
+    i.e. called after load_config(), if applicable.
     """
     # Debug stipulations
     if not args.get("debug") and args.get("nographics"):
@@ -83,11 +85,11 @@ def check_options(args: dict) -> None:
     if args.get("tail") is not None and args.get("tail") < 1:
         raise BadArgError(f"Cannot pass --tail {args['tail']}, pass at least 1")
 
-    # Stipulations for --perbuilding
+    # Stipulations for perbuilding
     if args["querytype"] == "perbuilding" and args.get("building"):
-        raise BadArgError("Cannot filter to a single building in in a --perbuilding query")
+        raise BadArgError("Cannot filter to a single building in a --perbuilding query")
 
-    # Stipulations for --perweek
+    # Stipulations for perweek
     if args["querytype"] != "perweek" and args.get("weeks") is not None:
         raise BadArgError("Cannot pass --weeks without --perweek")
     if args.get("weeks") and args.get("termend"):
@@ -95,13 +97,14 @@ def check_options(args: dict) -> None:
     if args.get("weeks") is not None and args.get("weeks") < 1:
         raise BadArgError(f"Cannot pass --weeks {args['weeks']}, use at least 1 week")
 
-    # Stipulations for --perrequestor
+    # Stipulations for perrequestor
     if args["querytype"] == "perrequestor" and args.get("requestor"):
         raise BadArgError("Cannot pass --requestor filter with --perrequestor query")
 
-    # Stipulations for --saveconfig
-    if not (args.get("saveconfig") or args.get("config") or args.get("localreport")):
-        raise BadArgError("Must specify a report file")
+    # Stipulations for localreport
+    # must have localreport unless saving config
+    if not (args.get("saveconfig") or args.get("localreport")):
+        raise BadArgError("Must specify a report file using --localreport flag")
 
 
 def clean_args(args: dict, org: Organization) -> None:
@@ -271,7 +274,7 @@ def load_config(args_dict: dict):
         if args_dict.get(arg) is None:
             args_dict[arg] = json_args.get(arg)
 
-def main(argv):
+def main(argv) -> None:
     """
     Parse arguments, call basic input validation.
     Call run_query() to run and display results.
@@ -294,15 +297,16 @@ def main(argv):
     if args.get("config"):
         load_config(args)
 
+    # atp we expect a fully completed args dict
     # check for errors in args
+    check_options(args)
     if args.get("localreport"):
         check_file(args["localreport"])
-    check_options(args)
 
-    # save config file if requested
+    # save the (now validated) config file if requested
     if args.get("saveconfig"):
         save_config(args, args["saveconfig"])
-        exit(0)
+        return
 
     # check report has enough info for query
     report = Report(args["localreport"])

@@ -783,14 +783,19 @@ class TestCli(unittest.TestCase):
 
         # perweek stipulations
         # pass -w without --perweek
-        argv = ["-q", "perbuilding", "-w", "10", "--localreport", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "-q", "perbuilding", "-w", "10", "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
         # pass -w and -e at once
-        argv = ["-q", "perweek", "-w", "10", "-e", "12/31/2023", "--localreport", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "-q", "perweek", "-w", "10", "-e", "12/31/2023", "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perrequestor stipulations
-        args = {"-q", "perrequestor", "--requestor", "requestor1@example.com", "--localreport", "unit-testing/minimal.csv"}
+        argv = ["--debug", "--nographics", "-q", "perrequestor", "--requestor", "requestor1@example.com", "--localreport", "unit-testing/minimal.csv"]
+        self.assertRaises(BadArgError, main, argv)
+
+        # saveconfig stipulations
+        # provide none of --localreport, --saveconfig, --config
+        argv = ["--debug", "--nographics", "-q", "perweek", "--head", "10"]
         self.assertRaises(BadArgError, main, argv)
 
     def test_clean_args(self):
@@ -837,6 +842,33 @@ class TestCli(unittest.TestCase):
         self.assertRaises(BadArgError, check_report, args, report)
         args = {"querytype": "perroom", "building": "The Building"}
         self.assertRaises(BadArgError, check_report, args, report)
+
+    def test_save_config(self):
+        """
+        Test cases for save_config() method.
+        """
+        argv: list[str]
+
+        # sample config 1 (no localreport)
+        argv = ["--debug", "--nographics", "--saveconfig", "unit-testing/generated-config1.json", "-q", "perweek",
+                "--building", "Building3", "--requestor", "requestor2@example.com", "--termstart", "5/15/2023",
+                "--weeks", "5"]
+        main(argv)
+        expected: dict = json.load(open("unit-testing/expected-config1.json", "r"))
+        generated: dict = json.load(open("unit-testing/generated-config1.json", "r"))
+        self.assertEqual(expected, generated)
+        os.remove("unit-testing/generated-config1.json")
+
+        # sample config 2 (with localreport)
+        argv = ["--debug", "--nographics", "--saveconfig", "unit-testing/generated-config2.json", "-q", "perrequestor",
+                "--termstart", "4/4/2023", "--termend", "6/16/2023", "--diagnoses", "Cable--HDMI, Cable-Ethernet",
+                "--head", "3", "--name", "Cable Problems by Requestor", "--color", "blue", "--localreport",
+                "unit-testing/querytests1.csv"]
+        main(argv)
+        expected: dict = json.load(open("unit-testing/expected-config2.json", "r"))
+        generated: dict = json.load(open("unit-testing/generated-config2.json", "r"))
+        self.assertEqual(expected, generated)
+        os.remove("unit-testing/generated-config2.json")
 
 
 class TestReport(unittest.TestCase):

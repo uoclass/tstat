@@ -1,0 +1,15 @@
+{
+    "localreport": "unit-testing/querytests1.csv",
+    "name": "Cable Problems by Requestor",
+    "color": "blue",
+    "termstart": "4/4/2023",
+    "termend": "6/16/2023",
+    "weeks": null,
+    "building": null,
+    "requestor": null,
+    "diagnoses": "Cable--HDMI, Cable-Ethernet",
+    "anddiagnoses": null,
+    "head": 3,
+    "tail": null,
+    "querytype": "perrequestor"
+}
