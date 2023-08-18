@@ -27,6 +27,8 @@ DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%
 QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor", "showtickets"]
 DEFAULT_TRACEBACK = 0
 DEBUG_TRACEBACK = 3
+ARGS_KEYS = ["localreport", "name", "color", "termstart", "termend", "weeks", "building", "requestor", "diagnoses",
+             "anddiagnoses", "head", "tail", "querytype"]
 
 
 class BadArgError(ValueError):
@@ -141,6 +143,12 @@ def clean_args(args: dict, org: Organization) -> None:
         args["diagnoses"] = args["diagnoses"].split(", ")
     if args.get("anddiagnoses"):
         args["anddiagnoses"] = args["anddiagnoses"].split(", ")
+
+    # set empty strings to None
+    # helps user pass empty quotes to override json args to None
+    for key in ARGS_KEYS:
+        if args.get(key) == "":
+            args[key] = None
 
 
 def check_report(args: dict, report: Report) -> None:
@@ -262,17 +270,21 @@ def save_config(args_dict: dict, config_path: str):
 
     file.close()
 
-def load_config(args_dict: dict):
+def load_config(args: dict):
     """
     Load configuration file.
     Overwrite json args with user args.
     """
-    file = open(args_dict.get("config"))
+    file = open(args.get("config"))
     json_args = json.load(file)
+    file.close()
+    args.pop("config")
 
-    for arg in args_dict.keys():
-        if args_dict.get(arg) is None:
-            args_dict[arg] = json_args.get(arg)
+    # loop thru standard args dict keys
+    # substitute json values with user-provided values (if any)
+    for arg in ARGS_KEYS:
+        if args.get(arg) is None:
+            args[arg] = json_args.get(arg)
 
 def main(argv) -> None:
     """

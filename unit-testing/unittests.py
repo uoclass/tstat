@@ -854,9 +854,13 @@ class TestCli(unittest.TestCase):
                 "--building", "Building3", "--requestor", "requestor2@example.com", "--termstart", "5/15/2023",
                 "--weeks", "5"]
         main(argv)
-        expected: dict = json.load(open("unit-testing/expected-config1.json", "r"))
-        generated: dict = json.load(open("unit-testing/generated-config1.json", "r"))
+        expected_file: typing.TextIO = open("unit-testing/expected-config1.json", "r")
+        generated_file: typing.TextIO = open("unit-testing/generated-config1.json", "r")
+        expected: dict = json.load(expected_file)
+        generated: dict = json.load(generated_file)
         self.assertEqual(expected, generated)
+        expected_file.close()
+        generated_file.close()
         os.remove("unit-testing/generated-config1.json")
 
         # sample config 2 (with localreport)
@@ -865,10 +869,108 @@ class TestCli(unittest.TestCase):
                 "--head", "3", "--name", "Cable Problems by Requestor", "--color", "blue", "--localreport",
                 "unit-testing/querytests1.csv"]
         main(argv)
-        expected: dict = json.load(open("unit-testing/expected-config2.json", "r"))
-        generated: dict = json.load(open("unit-testing/generated-config2.json", "r"))
+        expected_file: typing.TextIO = open("unit-testing/expected-config2.json", "r")
+        generated_file: typing.TextIO = open("unit-testing/generated-config2.json", "r")
+        expected: dict = json.load(expected_file)
+        generated: dict = json.load(generated_file)
         self.assertEqual(expected, generated)
+        expected_file.close()
+        generated_file.close()
         os.remove("unit-testing/generated-config2.json")
+
+    def test_load_config(self):
+        """
+        Test cases for load_config() method.
+        """
+        # setup
+        report: Report = Report("unit-testing/querytests1.csv")
+        org: Organization = Organization()
+        report.populate(org)
+
+        # load sample config 1
+        args: dict = {"config": "unit-testing/expected-config1.json"}
+        load_config(args)
+        clean_args(args, org)
+        # ensure it matches expected args dict
+        expected: dict = {
+            "localreport":  None,
+            "name": None,
+            "color": None,
+            "termstart": datetime(2023, 5, 15),
+            "termend": None,
+            "weeks": 5,
+            "building": org.find_building("Building3"),
+            "requestor": org.find_user("requestor2@example.com"),
+            "diagnoses": None,
+            "anddiagnoses": None,
+            "head": None,
+            "tail": None,
+            "querytype": "perweek"
+        }
+        self.assertEqual(args, expected)
+
+        # load sample config 2
+        args: dict = {"config": "unit-testing/expected-config2.json"}
+        load_config(args)
+        clean_args(args, org)
+        # ensure it matches expected args dict
+        expected: dict = {
+            "localreport":  "unit-testing/querytests1.csv",
+            "name": "Cable Problems by Requestor",
+            "color": "blue",
+            "termstart": datetime(2023, 4, 4),
+            "termend": datetime(2023, 6, 16),
+            "weeks": None,
+            "building": None,
+            "requestor": None,
+            "diagnoses": ["Cable--HDMI", "Cable-Ethernet"],
+            "anddiagnoses": None,
+            "head": 3,
+            "tail": None,
+            "querytype": "perrequestor"
+        }
+        self.assertEqual(args, expected)
+
+        # using a different report
+        report: Report = Report("unit-testing/minimal.csv")
+        org: Organization = Organization()
+        report.populate(org)
+
+        # test that user-provided args replace json args
+        args = {
+            "config": "unit-testing/expected-config2.json",
+            "localreport": "unit-testing/minimal.csv",
+            "name": "", # user can pass empty quotes for None
+            "color": "red",
+            "termstart": None, # None means leave the json arg untouched
+            "termend": "",
+            "weeks": 10,
+            "building": "The Building",
+            "requestor": None,
+            "diagnoses": "",
+            "anddiagnoses": "Projector, TV Display, Cable--HDMI",
+            "head": "",
+            "tail": None,
+            "querytype": "perweek"
+        }
+        expected = {
+            "localreport": "unit-testing/minimal.csv",
+            "name": None,
+            "color": "red",
+            "termstart": datetime(2023, 4, 4),
+            "termend": None,
+            "weeks": 10,
+            "building": org.find_building("The Building"),
+            "requestor": None,
+            "diagnoses": None,
+            "anddiagnoses": ["Projector", "TV Display", "Cable--HDMI"],
+            "head": None,
+            "tail": None,
+            "querytype": "perweek"
+        }
+        load_config(args)
+        clean_args(args, org)
+        self.assertEqual(args, expected)
 
 
 class TestReport(unittest.TestCase):
