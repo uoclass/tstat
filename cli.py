@@ -158,16 +158,16 @@ def check_report(args: dict, report: Report) -> None:
     """
     query_type = args["querytype"]
     if query_type == "perweek":
-        if "Created" not in report.fields_present:
-            raise BadArgError("Cannot run a tickets-per-week query without Created field present in report")
+        if "created" not in report.fields_present:
+            raise BadArgError("Cannot run tickets-per-week query, no created field in report")
     if query_type == "perbuilding":
-        if "Class Support Building" not in report.fields_present:
+        if "building" not in report.fields_present:
             raise BadArgError(
-                "Cannot run a tickets-per-building query without Class Support Building field present in report")
+                "Cannot run a tickets-per-building query, no building field in report")
     if query_type == "perroom":
-        if ("Class Support Building" not in report.fields_present) or ("Room number" not in report.fields_present):
+        if ("building" not in report.fields_present) or ("room_identifier" not in report.fields_present):
             raise BadArgError(
-                "Cannot run a tickets-per-room query without Class Support Building and Room number field present in report")
+                "Cannot run a tickets-per-room query, no building and room identifier fields in report")
 
 
 def parser_setup():

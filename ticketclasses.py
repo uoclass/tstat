@@ -13,8 +13,13 @@ TICKET_URL = "https://service.uoregon.edu/TDNext/Apps/430/Tickets/TicketDet.aspx
 from datetime import *
 from enum import *
 
+class OrganizationEntity:
+    """
+    Abstract class for an entity within the organization.
+    e.g. buildings, users, groups, departments, etc.
+    """
 
-class Building:
+class Building(OrganizationEntity):
     name: str
     rooms: dict[str, "Room"]
 
@@ -29,7 +34,7 @@ class Building:
         return f"Building({self.name})"
 
 
-class Room:
+class Room(OrganizationEntity):
     building: Building
     identifier: str
     tickets: list["Ticket"]
@@ -46,7 +51,7 @@ class Room:
         return f"Room({self.building.name}, {self.identifier})"
 
 
-class User:
+class User(OrganizationEntity):
     """
     A TDX user (typically as requestor on a ticket).
     """
@@ -68,7 +73,7 @@ class User:
         return f"User({self.email}, {self.name}, {self.phone})"
 
 
-class Group:
+class Group(OrganizationEntity):
     """
     A TDX group (typically as Resp Group on a ticket).
     """
@@ -86,7 +91,7 @@ class Group:
         return f"Group({self.name})"
 
 
-class Department:
+class Department(OrganizationEntity):
     """
     A TDX department (typically listed under requestor on a ticket).
     """
@@ -139,9 +144,9 @@ class Diagnosis(Enum):
 class Ticket:
     id: int
     title: str
-    responsible: Group
+    responsible_group: Group
     requestor: User
-    dept: Department
+    department: Department
     room: Room
     created: datetime
     modified: datetime
@@ -151,7 +156,7 @@ class Ticket:
     def __init__(self) -> None:
         self.id = None
         self.title = None
-        self.responsible = None
+        self.responsible_group = None
         self.requestor = None
         self.department = None
         self.room = None
@@ -174,7 +179,7 @@ class Ticket:
         return f"""{self.title}
 {TICKET_URL}{self.id}
 ID: {self.id}
-Responsible: {self.responsible}
+Responsible: {self.responsible_group}
 Requestor: {self.requestor}
 Department: {self.department}
 Room: {self.room}

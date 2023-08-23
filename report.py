@@ -17,8 +17,24 @@ from organization import *
 from ticketclasses import *
 
 # Constants
-STANDARD_FIELDS = ["ID", "Title", "Resp Group", "Requestor", "Requestor Email", "Requestor Phone", "Acct/Dept",
-                   "Class Support Building", "Room number", "Classroom Problem Types", "Created", "Modified", "Status"]
+
+# match attribute names to TDX Academic Units Form names
+STANDARD_FIELDS: dict[str, list[str]] = {
+    "id": ["ID"],
+    "title": ["Title"],
+    "responsible_group": ["Resp Group"],
+    "requestor_name": ["Requestor"],
+    "requestor_email": ["Requestor Email"],
+    "requestor_phone": ["Requestor Phone"],
+    "department": ["Acct/Dept"],
+    "building": ["Location", "Class Support Building"],
+    "room_identifier": ["Location Room", "Room number"],
+    "diagnoses": ["Classroom Problem Types"],
+    "created": ["Created"],
+    "modified": ["Modified"],
+    "status": ["Status"]
+}
+
 TIME_FORMATS: list[str] = [
     # 12 hour
     "%Y-%m-%d %H:%M", "%m/%d/%Y %H:%M", "%m/%d/%y %H:%M", "%d.%m.%Y %H:%M", "%d.%m.%y %H:%M",
@@ -76,37 +92,47 @@ class Report:
         This does not add the ticket to the org's tickets dict,
         Nor does it add the ticket ot the on-campus entities' ticket lists.
         """
+
+        def get_attribute(attribute_name: str) -> Union[str, None]:
+            """
+            Return the desired attribute for the given csv_ticket.
+            Returns string as stored in CSV or None if empty.
+            """
+            for column_name in STANDARD_FIELDS[attribute_name]:
+                if csv_ticket.get(column_name):
+                    return csv_ticket[column_name]
+            return None
+
         # new ticket
         new_ticket: Ticket = Ticket()
 
-        # populate simple attributes
-        new_ticket.title = csv_ticket.get("Title")
-        new_ticket.created = csv_ticket.get("Created")
-        new_ticket.modified = csv_ticket.get("Modified")
-        new_ticket.status = csv_ticket.get("Status")
+        # set title attribute
+        new_ticket.title = get_attribute("title")
 
-        # use find methods set these attributes
-        new_ticket.responsible = org.find_group(csv_ticket.get("Resp Group"), create_mode=True)
-        new_ticket.requestor = org.find_user(csv_ticket.get("Requestor Email"),
-                                                  csv_ticket.get("Requestor"),
-                                                  csv_ticket.get("Requestor Phone"), create_mode=True)
-        new_ticket.department = org.find_department(csv_ticket.get("Acct/Dept"), create_mode=True)
-        new_ticket.room = org.find_room(csv_ticket.get("Class Support Building"),
-                                             csv_ticket.get("Room number"), create_mode=True)
+        # use find methods set OrganizationEntity objects
+        new_ticket.responsible_group = org.find_group(get_attribute("responsible_group"), create_mode=True)
+        new_ticket.requestor = org.find_user(get_attribute("requestor_email"),
+                                             get_attribute("requestor_name"),
+                                             get_attribute("requestor_phone"), create_mode=True)
+        new_ticket.department = org.find_department(get_attribute("department"), create_mode=True)
+        new_ticket.room = org.find_room(get_attribute("building"),
+                                        get_attribute("room_identifier"), create_mode=True)
 
         # ID should be an int
-        new_ticket.id = int(csv_ticket["ID"]) if csv_ticket.get("ID") else 0
+        id_attribute: str = get_attribute("id")
+        new_ticket.id = int(id_attribute) if id_attribute else 0
 
         # Created and Modified should be datetime objects
-        if csv_ticket.get("Created"):
-            new_ticket.created = datetime.strptime(csv_ticket["Created"], self.time_format)
-        if csv_ticket.get("Modified"):
-            new_ticket.modified = datetime.strptime(csv_ticket["Modified"], self.time_format)
+        created_attribute: str = get_attribute("created")
+        new_ticket.created = datetime.strptime(created_attribute, self.time_format) if created_attribute else None
+        modified_attribute: str = get_attribute("modified")
+        new_ticket.modified = datetime.strptime(modified_attribute, self.time_format) if modified_attribute else None
 
-        # Classroom Problem Types should be Diagnosis Enums
-        if csv_ticket.get("Classroom Problem Types"):
+        # diagnoses attribute should be Diagnosis Enums
+        diagnoses_attribute: str = get_attribute("diagnoses")
+        if diagnoses_attribute:
             diagnoses: list[Diagnosis] = []
-            problem_types: list[str] = csv_ticket["Classroom Problem Types"].split(", ")
+            problem_types: list[str] = diagnoses_attribute.split(", ")
             for problem in problem_types:
                 valid: bool = True
                 try:
@@ -116,6 +142,9 @@ class Report:
                 if not valid:
                     raise BadReportError(f"Unknown Classroom Problem Type {problem}")
             new_ticket.diagnoses = diagnoses
+
+        # FIXME change to Enum once status functionality implemented
+        new_ticket.status = get_attribute("status")
 
         # return finished ticket
         return new_ticket
@@ -130,10 +159,18 @@ def get_fields_present(csv_ticket: dict) -> Union[list[str], None]:
     Set self.fields_present accordingly.
     """
     fields_present: list[str] = []
-    for field in STANDARD_FIELDS:
-        if csv_ticket.get(field) is not None:
-            fields_present.append(field)
-    if len(STANDARD_FIELDS) != len(fields_present):
+    # loop through attribute names
+    for attribute in STANDARD_FIELDS.keys():
+        # ensure one of attribute's column names present in report
+        field_present: bool = False
+        preferred_column_name: bool = False
+        for csv_column_name in STANDARD_FIELDS[attribute]:
+            if csv_ticket.get(csv_column_name) is not None:
+                fields_present.append(attribute)
+
+    # FIXME warn of legacy names
+    # warn of missing fields
+    if len(list(STANDARD_FIELDS.keys())) != len(fields_present):
         print("""Given report does not follow tdxplot Standard Report guidelines
 Expect limited functionality due to missing ticket information""", file=sys.stderr)
     return fields_present

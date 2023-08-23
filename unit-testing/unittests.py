@@ -37,7 +37,7 @@ class TestOrganization(unittest.TestCase):
         ticket.id = 1
         ticket.room = room1
         ticket.requestor = user1
-        ticket.responsible = group1
+        ticket.responsible_group = group1
         ticket.department = dept1
 
         org.add_new_ticket(ticket)
@@ -1004,7 +1004,7 @@ class TestReport(unittest.TestCase):
         tick: Ticket = org.tickets.get(12345678)
         self.assertTrue(tick)
         self.assertEqual(tick.id, 12345678)
-        self.assertEqual(tick.responsible, group)
+        self.assertEqual(tick.responsible_group, group)
         self.assertEqual(tick.requestor, requestor)
         self.assertEqual(tick.department, department)
         self.assertEqual(tick.room, room)
@@ -1045,7 +1045,7 @@ class TestReport(unittest.TestCase):
 
         ticket: Ticket = report.dict_to_ticket(org, ticket_dict)
         expected = [(ticket.room, org.find_room("The Building", "111")),
-                    (ticket.responsible, org.find_group("USS-Classrooms")),
+                    (ticket.responsible_group, org.find_group("USS-Classrooms")),
                     (ticket.requestor, org.find_user("example@example.com")),
                     (ticket.department, org.find_department("Based Department"))]
 
@@ -1058,12 +1058,12 @@ class TestReport(unittest.TestCase):
         """
         # ensure time_format and fields_present set well
         full_report: Report = Report("unit-testing/minimal.csv")
-        self.assertEqual(full_report.fields_present, ["ID", "Title", "Resp Group", "Requestor", "Requestor Email",
-                                                 "Requestor Phone", "Acct/Dept", "Class Support Building",
-                                                 "Room number", "Classroom Problem Types", "Created", "Modified", "Status"])
+        self.assertEqual(full_report.fields_present, ["id", "title", "responsible_group", "requestor_name", "requestor_email",
+                                                      "requestor_phone", "department", "building", "room_identifier",
+                                                      "diagnoses", "created", "modified", "status"])
         self.assertEqual(full_report.time_format, "%m/%d/%Y %H:%M")
         part_report: Report = Report("unit-testing/missing-fields.csv")
-        self.assertEqual(part_report.fields_present, ["ID", "Title", "Resp Group", "Acct/Dept", "Status"])
+        self.assertEqual(part_report.fields_present, ["id", "title", "responsible_group", "department", "status"])
         self.assertEqual(part_report.time_format, None)
 
 if __name__ == "__main__":

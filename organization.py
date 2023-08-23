@@ -63,7 +63,7 @@ tickets: {len(self.tickets)}"""
         self.tickets[ticket.id] = ticket
         ticket.room.tickets.append(ticket)
         ticket.requestor.tickets.append(ticket)
-        ticket.responsible.tickets.append(ticket)
+        ticket.responsible_group.tickets.append(ticket)
         ticket.department.tickets.append(ticket)
 
     def find_group(self, name: str = "Undefined", create_mode: bool = False) -> Group:
