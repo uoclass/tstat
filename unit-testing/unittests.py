@@ -252,9 +252,9 @@ class TestOrganization(unittest.TestCase):
         """
         Test cases for get_monday() helper function.
         """
-        self.assertEqual(get_monday(datetime(2023, 7, 27),), datetime(2023, 7, 24))
-        self.assertEqual(get_monday(datetime(2023, 6, 26),), datetime(2023, 6, 26))
-        self.assertEqual(get_monday(datetime(2023, 7, 23),), datetime(2023, 7, 17))
+        self.assertEqual(get_monday(datetime(2023, 7, 27), ), datetime(2023, 7, 24))
+        self.assertEqual(get_monday(datetime(2023, 6, 26), ), datetime(2023, 6, 26))
+        self.assertEqual(get_monday(datetime(2023, 7, 23), ), datetime(2023, 7, 17))
 
     def test_filter_tickets(self):
         """
@@ -702,7 +702,8 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(org.per_requestor(args), expected)
 
         # with termstart, termend, and building filter
-        args = {"termstart": datetime(2023, 4, 20), "termend": datetime(2023, 5, 27), "building": org.find_building("Building2")}
+        args = {"termstart": datetime(2023, 4, 20), "termend": datetime(2023, 5, 27),
+                "building": org.find_building("Building2")}
         expected = {
             requestor1: 1,
             requestor2: 0,
@@ -765,7 +766,8 @@ class TestCli(unittest.TestCase):
         self.assertEqual(datetime(2020, 12, 31), get_datetime("31.12.20"))
 
         # expected errors from main()
-        argv: list[str] = ["--debug", "--nographics", "--querytype", "perweek", "-t", "19700101", "--localreport","unit-testing/minimal.csv"]
+        argv: list[str] = ["--debug", "--nographics", "--querytype", "perweek", "-t", "19700101", "--localreport",
+                           "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
     def test_check_options(self):
@@ -778,7 +780,8 @@ class TestCli(unittest.TestCase):
         self.assertRaises(BadArgError, main, argv)
 
         # perbuilding stipulations (pass -b with --perbuilding)
-        argv = ["--debug", "--nographics", "-q", "perbuilding", "-b", "Lillis", "--localreport", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "-q", "perbuilding", "-b", "Lillis", "--localreport",
+                "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perweek stipulations
@@ -786,11 +789,13 @@ class TestCli(unittest.TestCase):
         argv = ["--debug", "--nographics", "-q", "perbuilding", "-w", "10", "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
         # pass -w and -e at once
-        argv = ["--debug", "--nographics", "-q", "perweek", "-w", "10", "-e", "12/31/2023", "--localreport", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "-q", "perweek", "-w", "10", "-e", "12/31/2023", "--localreport",
+                "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perrequestor stipulations
-        argv = ["--debug", "--nographics", "-q", "perrequestor", "--requestor", "requestor1@example.com", "--localreport", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "-q", "perrequestor", "--requestor", "requestor1@example.com",
+                "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # saveconfig stipulations
@@ -893,7 +898,7 @@ class TestCli(unittest.TestCase):
         clean_args(args, org)
         # ensure it matches expected args dict
         expected: dict = {
-            "localreport":  None,
+            "localreport": None,
             "name": None,
             "color": None,
             "termstart": datetime(2023, 5, 15),
@@ -915,7 +920,7 @@ class TestCli(unittest.TestCase):
         clean_args(args, org)
         # ensure it matches expected args dict
         expected: dict = {
-            "localreport":  "unit-testing/querytests1.csv",
+            "localreport": "unit-testing/querytests1.csv",
             "name": "Cable Problems by Requestor",
             "color": "blue",
             "termstart": datetime(2023, 4, 4),
@@ -940,9 +945,9 @@ class TestCli(unittest.TestCase):
         args = {
             "config": "unit-testing/expected-config2.json",
             "localreport": "unit-testing/minimal.csv",
-            "name": "", # user can pass empty quotes for None
+            "name": "",  # user can pass empty quotes for None
             "color": "red",
-            "termstart": None, # None means leave the json arg untouched
+            "termstart": None,  # None means leave the json arg untouched
             "termend": "",
             "weeks": 10,
             "building": "The Building",
@@ -1020,7 +1025,6 @@ class TestReport(unittest.TestCase):
         self.assertEqual(department.tickets, [tick])
         self.assertEqual(group.tickets, [tick])
 
-
     def test_dict_to_ticket(self):
         """
         Test cases for dict_to_ticket() method.
@@ -1030,18 +1034,18 @@ class TestReport(unittest.TestCase):
         report = Report("unit-testing/minimal.csv")
         org = Organization()
         ticket_dict: dict = {"ID": "12345678",
-                            "Title": "My Ticket",
-                            "Resp Group": "USS-Classrooms",
-                            "Requestor": "Sir Example",
-                            "Requestor Email": "example@example.com",
-                            "Requestor Phone": "5555555555",
-                            "Acct/Dept": "Based Department",
-                            "Class Support Building": "The Building",
-                            "Room number": "111",
-                            "Classroom Problem Types": "Cable--HDMI, Touch Panel",
-                            "Created": "7/14/2023 10:41",
-                            "Modified": "7/14/2023 10:41",
-                            "Status": "Closed"}
+                             "Title": "My Ticket",
+                             "Resp Group": "USS-Classrooms",
+                             "Requestor": "Sir Example",
+                             "Requestor Email": "example@example.com",
+                             "Requestor Phone": "5555555555",
+                             "Acct/Dept": "Based Department",
+                             "Location": "The Building",
+                             "Location Room": "111",
+                             "Classroom Problem Types": "Cable--HDMI, Touch Panel",
+                             "Created": "7/14/2023 10:41",
+                             "Modified": "7/14/2023 10:41",
+                             "Status": "Closed"}
 
         ticket: Ticket = report.dict_to_ticket(org, ticket_dict)
         expected = [(ticket.room, org.find_room("The Building", "111")),
@@ -1052,19 +1056,41 @@ class TestReport(unittest.TestCase):
         for pair in expected:
             self.assertEqual(pair[0], pair[1])
 
+        # test for old building and room identifier names from TDX
+        old_nomenclature_dict: dict = {
+                             "Class Support Building": "Another Building",
+                             "Room number": "99",
+                             }
+
+        ticket = report.dict_to_ticket(org, old_nomenclature_dict)
+        self.assertEqual(ticket.room, org.find_room("Another Building", "99"))
+
+        # test that old nomenclature not used if new nomenclature present
+        mixed_nomenclature_dict: dict = {
+            "Class Support Building": "Incorrect Building",
+            "Room number": "50",
+            "Location": "Correct Building",
+            "Location Room": "100",
+        }
+
+        ticket = report.dict_to_ticket(org, mixed_nomenclature_dict)
+        self.assertEqual(ticket.room, org.find_room("Correct Building", "100"))
+
     def test_constructor(self):
         """
         Test cases for __init__() constructor.
         """
         # ensure time_format and fields_present set well
         full_report: Report = Report("unit-testing/minimal.csv")
-        self.assertEqual(full_report.fields_present, ["id", "title", "responsible_group", "requestor_name", "requestor_email",
-                                                      "requestor_phone", "department", "building", "room_identifier",
-                                                      "diagnoses", "created", "modified", "status"])
+        self.assertEqual(full_report.fields_present,
+                         ["id", "title", "responsible_group", "requestor_name", "requestor_email",
+                          "requestor_phone", "department", "building", "room_identifier",
+                          "diagnoses", "created", "modified", "status"])
         self.assertEqual(full_report.time_format, "%m/%d/%Y %H:%M")
         part_report: Report = Report("unit-testing/missing-fields.csv")
         self.assertEqual(part_report.fields_present, ["id", "title", "responsible_group", "department", "status"])
         self.assertEqual(part_report.time_format, None)
+
 
 if __name__ == "__main__":
     try:
