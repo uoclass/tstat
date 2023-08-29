@@ -75,6 +75,8 @@ def check_options(args: dict) -> None:
     # Debug stipulations
     if not args.get("debug") and args.get("nographics"):
         raise BadArgError("Cannot pass --nographics without --debug flag")
+    if not args.get("debug") and args.get("printquery"):
+        raise BadArgError("Cannot pass --printquery without --debug flag")
 
     # Must select a querytype if not loading
     if not args.get("config") and args.get("querytype") not in QUERY_TYPES:
@@ -191,7 +193,8 @@ def parser_setup():
 
     # debug mode
     parser.add_argument("--debug", action="store_true", help="Show traceback for all errors")
-    parser.add_argument("--nographics", action="store_true", help="Print query results but do not show graph")
+    parser.add_argument("--nographics", action="store_true", help="Do not show graph")
+    parser.add_argument("--printquery", action="store_true", help="Always print query results")
 
     # display customization
     parser.add_argument("-n", "--name", type=str, help="Set the name of the plot.")
@@ -227,32 +230,42 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
     Run query with given args on given org.
     Return results, call appropriate visual.py function.
     """
-    query_type = args["querytype"]
+    query_type: dict = args["querytype"]
+    query_result: dict
+
+    # determine query, run, and save results
     if query_type == "perweek":
         tickets_per_week = org.per_week(args)
         if not args.get("nographics"):
             view_per_week(tickets_per_week, args)
-        return tickets_per_week
+        query_result = tickets_per_week
     if query_type == "perbuilding":
         tickets_per_building = org.per_building(args)
         if not args.get("nographics"):
             view_per_building(tickets_per_building, args)
-        return tickets_per_building
+        query_result = tickets_per_building
     if query_type == "perroom":
         tickets_per_room = org.per_room(args)
         if not args.get("nographics"):
             view_per_room(tickets_per_room, args)
-        return tickets_per_room
+        query_result = tickets_per_room
     if query_type == "perrequestor":
         tickets_per_requestor = org.per_requestor(args)
         if not args.get("nographics"):
             view_per_requestor(tickets_per_requestor, args)
-        return tickets_per_requestor
+        query_result = tickets_per_requestor
     if query_type == "showtickets":
         tickets_matched: list[Ticket] = filter_tickets(org.tickets, args)
         if not args.get("nographics"):
             view_show_tickets(tickets_matched, args)
-        return tickets_matched
+        query_result = tickets_matched
+
+    # print query results if option enabled
+    if args.get("printquery"):
+        print(query_result)
+
+    return query_result
+
 
 
 def save_config(args_dict: dict, config_path: str):
@@ -265,6 +278,7 @@ def save_config(args_dict: dict, config_path: str):
     args_dict.pop("config")
     args_dict.pop("debug")
     args_dict.pop("nographics")
+    args_dict.pop("printquery")
 
     # add correct file extension
     if not config_path.endswith(".json"):
