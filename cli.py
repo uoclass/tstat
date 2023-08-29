@@ -65,6 +65,7 @@ def get_datetime(date_text: str):
             continue
     raise BadArgError(f"Date {date_text} not recognized, try yyyy-mm-dd")
 
+
 def check_options(args: dict) -> None:
     """
     Halt program if conflicting or missing flags given.
@@ -82,9 +83,9 @@ def check_options(args: dict) -> None:
     # Query result cropping stipulations
     if args.get("head") is not None and args.get("tail") is not None:
         raise BadArgError("Cannot pass --head and --tail simultaneously")
-    if args.get("head") is not None and args.get("head") < 1:
+    if args.get("head") is not None and args.get("head") < 0:
         raise BadArgError(f"Cannot pass --head {args['head']}, pass at least 1")
-    if args.get("tail") is not None and args.get("tail") < 1:
+    if args.get("tail") is not None and args.get("tail") < 0:
         raise BadArgError(f"Cannot pass --tail {args['tail']}, pass at least 1")
 
     # Stipulations for perbuilding
@@ -96,7 +97,7 @@ def check_options(args: dict) -> None:
         raise BadArgError("Cannot pass --weeks without --perweek")
     if args.get("weeks") and args.get("termend"):
         raise BadArgError("Cannot pass --weeks and --termend simultaneously")
-    if args.get("weeks") is not None and args.get("weeks") < 1:
+    if args.get("weeks") is not None and args.get("weeks") < 0:
         raise BadArgError(f"Cannot pass --weeks {args['weeks']}, use at least 1 week")
 
     # Stipulations for perrequestor
@@ -144,10 +145,14 @@ def clean_args(args: dict, org: Organization) -> None:
     if args.get("anddiagnoses"):
         args["anddiagnoses"] = args["anddiagnoses"].split(", ")
 
-    # set empty strings to None
+    # set zeroes and empty strings to None
     # helps user pass empty quotes to override json args to None
     for key in ARGS_KEYS:
         if args.get(key) == "":
+            print(f"Empty value passed for {key}, ignoring")
+            args[key] = None
+        if args.get(key) == 0:
+            print(f"Value 0 passed for {key}, ignoring")
             args[key] = None
 
 
@@ -179,9 +184,10 @@ def parser_setup():
 
     # file io flags
     config_group = parser.add_mutually_exclusive_group(required=False)
-    config_group.add_argument("--saveconfig", type=str, help="Save current arguments as a loadable config file with given file name")
+    config_group.add_argument("--saveconfig", type=str,
+                              help="Save current arguments as a loadable config file with given file name")
     config_group.add_argument("--config", type=str, help="Load configuration file with filename")
-    parser.add_argument("--localreport", "-l", type=str, help = "Load report csv file")
+    parser.add_argument("--localreport", "-l", type=str, help="Load report csv file")
 
     # debug mode
     parser.add_argument("--debug", action="store_true", help="Show traceback for all errors")
@@ -209,7 +215,7 @@ def parser_setup():
     crop_group = parser.add_mutually_exclusive_group(required=False)
     crop_group.add_argument("--head", type=int, help="Show only first X entries from query results")
     crop_group.add_argument("--tail", type=int, help="Show only last X entries from query results")
-    
+
     # query presets
     parser.add_argument("-q", "--querytype", choices=QUERY_TYPES, help="Specify query type")
 
@@ -248,11 +254,12 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
             view_show_tickets(tickets_matched, args)
         return tickets_matched
 
+
 def save_config(args_dict: dict, config_path: str):
     """
     Save current arguments into loadable JSON configuration file.
     """
-    
+
     # remove unneeded arguments for config file
     args_dict.pop("saveconfig")
     args_dict.pop("config")
@@ -262,13 +269,14 @@ def save_config(args_dict: dict, config_path: str):
     # add correct file extension
     if not config_path.endswith(".json"):
         config_path += ".json"
-    
+
     file = open(config_path, "w+")
     json.dump(args_dict, file, indent=4)
 
     print(f"Saved current configuration to {config_path}")
 
     file.close()
+
 
 def load_config(args: dict):
     """
@@ -285,6 +293,7 @@ def load_config(args: dict):
     for arg in ARGS_KEYS:
         if args.get(arg) is None:
             args[arg] = json_args.get(arg)
+
 
 def main(argv) -> None:
     """
@@ -305,7 +314,7 @@ def main(argv) -> None:
 
     # set debug mode
     sys.tracebacklimit = DEBUG_TRACEBACK if args.get("debug") else DEFAULT_TRACEBACK
-    
+
     if args.get("config"):
         load_config(args)
 

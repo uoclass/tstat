@@ -954,7 +954,7 @@ class TestCli(unittest.TestCase):
             "requestor": None,
             "diagnoses": "",
             "anddiagnoses": "Projector, TV Display, Cable--HDMI",
-            "head": "",
+            "head": 0,
             "tail": None,
             "querytype": "perweek"
         }
