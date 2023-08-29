@@ -130,6 +130,7 @@ class Diagnosis(Enum):
     MICROPHONE = "Microphone"
     ALS = "Assistive Listening Device"
     PROJECTOR = "Projector"
+    TECH_TOUR = "Tech Tour"
     TV_DISPLAY = "TV Display"
     TRANSCIEVER = "Transmitter/Receiver"
     DM_CONTROLLER = "DM Controller"
