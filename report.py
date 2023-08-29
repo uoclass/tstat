@@ -158,21 +158,41 @@ def get_fields_present(csv_ticket: dict) -> Union[list[str], None]:
     Check which of STANDARD_FIELDS are present in report.
     Set self.fields_present accordingly.
     """
+    # return variable
     fields_present: list[str] = []
+
+    # for determining what warnings to show
+    legacy_fields: list[tuple[str]] = []
+    missing_fields: list[str] = []
+
     # loop through attribute names
     for attribute in STANDARD_FIELDS.keys():
         # ensure one of attribute's column names present in report
-        field_present: bool = False
-        preferred_column_name: bool = False
+        attribute_present: bool = False
         for csv_column_name in STANDARD_FIELDS[attribute]:
+            # check if attribute found using this CSV column name
             if csv_ticket.get(csv_column_name) is not None:
+                attribute_present = True
                 fields_present.append(attribute)
+            # check if it is a legacy field so we can warn later
+            if csv_column_name != STANDARD_FIELDS[attribute][0]:
+                legacy_fields.append((csv_column_name, STANDARD_FIELDS[attribute][0]))
+        # if none of acceptable column names found, attribute missing
+        if not attribute_present:
+            missing_fields.append(attribute)
 
-    # FIXME warn of legacy names
+    # general guidelines warning
+    if missing_fields or legacy_fields:
+        print("Report does not follow tdxplot Standard Report Guidlines. See issues below:", file=sys.stderr)
+
+    # warn of legacy names
+    for pair in legacy_fields:
+        print(f"Report uses legacy field \"{pair[0]}\". New convention is \"{pair[1]}\"", file=sys.stderr)
+
     # warn of missing fields
-    if len(list(STANDARD_FIELDS.keys())) != len(fields_present):
-        print("""Given report does not follow tdxplot Standard Report guidelines
-Expect limited functionality due to missing ticket information""", file=sys.stderr)
+    for field in missing_fields:
+        print(f"Report is missing field \"{STANDARD_FIELDS[field][0]}\"")
+
     return fields_present
 
 
