@@ -11,5 +11,6 @@
     "anddiagnoses": null,
     "head": 3,
     "tail": null,
+    "prune": null,
     "querytype": "perrequestor"
 }

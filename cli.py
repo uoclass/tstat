@@ -92,7 +92,7 @@ def check_options(args: dict) -> None:
 
     # Stipulations for perbuilding
     if args["querytype"] == "perbuilding" and args.get("building"):
-        raise BadArgError("Cannot filter to a single building in a --perbuilding query")
+        raise BadArgError("Cannot filter to a single building in a perbuilding query")
 
     # Stipulations for perweek
     if args["querytype"] != "perweek" and args.get("weeks") is not None:
@@ -104,7 +104,11 @@ def check_options(args: dict) -> None:
 
     # Stipulations for perrequestor
     if args["querytype"] == "perrequestor" and args.get("requestor"):
-        raise BadArgError("Cannot pass --requestor filter with --perrequestor query")
+        raise BadArgError("Cannot pass --requestor filter with perrequestor query")
+
+    # Stipulations for showtickets
+    if args["querytype"] == "showtickets" and args.get("prune"):
+        raise BadArgError("Cannot pass --prune with showtickets query")
 
     # Stipulations for localreport
     # must have localreport unless saving config
@@ -156,6 +160,15 @@ def clean_args(args: dict, org: Organization) -> None:
         if args.get(key) == 0:
             print(f"Value 0 passed for {key}, ignoring")
             args[key] = None
+
+    # interpret prune flag as bool
+    if args.get("prune"):
+        if args.get("prune").lower() in ["t", "true", "y", "yes", "on"]:
+            args["prune"] = True
+        elif args.get("prune").lower() in ["f", "false", "n", "no", "off"]:
+            args["prune"] = False
+        else:
+            raise BadArgError("Pass either true or false for the prune argument")
 
 
 def check_report(args: dict, report: Report) -> None:
@@ -218,6 +231,7 @@ def parser_setup():
     crop_group = parser.add_mutually_exclusive_group(required=False)
     crop_group.add_argument("--head", type=int, help="Show only first X entries from query results")
     crop_group.add_argument("--tail", type=int, help="Show only last X entries from query results")
+    crop_group.add_argument("--prune", type=str, help="Set true to always hide graph bars with 0 count")
 
     # query presets
     parser.add_argument("-q", "--querytype", choices=QUERY_TYPES, help="Specify query type")

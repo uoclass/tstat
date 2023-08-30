@@ -18,6 +18,7 @@ DEFAULT_NAMES = {"perweek": "Tickets per Week",
                  "perbuilding": "Tickets per Building",
                  "perroom": "Tickets per Room",
                  "perrequestor": "Tickets per Requestor"}
+PRUNE_COUNT = 15
 
 def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
     """
@@ -150,25 +151,41 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
 
 def crop_counts(labels: list[str], counts: list[int], args) -> tuple[list[str], list[int]]:
     """
-    Crop counts based on "head" and "tail" values in args.
+    Crop counts based on head, tail, or prune in args.
     No sorting here. Preserves elements order given in arrays,
     Although other funcs may sort differently on "head"/"tail".
     """
-    if args.get("head") is None and args.get("tail") is None:
-        return labels, counts
+    def prune_counts() -> tuple[list[str], list[int]]:
+        pruned_labels: list[str] = []
+        pruned_counts: list[str] = []
+        for i in range(len(counts)):
+            if counts[i] > 0:
+                pruned_labels.append(labels[i])
+                pruned_counts.append(counts[i])
+        return pruned_labels, pruned_counts
+
     if args.get("head"):
         return labels[:args["head"]], counts[:args["head"]]
     if args.get("tail"):
         return labels[-args["tail"]:], counts[-args["tail"]:]
+    if len(counts) >= PRUNE_COUNT and args.get("prune") != False:
+        # prune the graph by removing 0 counts
+        return prune_counts()
+
+    # no cropping
+    return labels, counts
 
 def crop_tickets(tickets: list["Ticket"], args) -> list["Ticket"]:
     """
-    Crop a simple ticket list based on "head" and "tail" values in args.
+    Crop a simple ticket list based on head or tail in args.
     """
-    if args.get("head") is None and args.get("tail") is None:
-        return tickets
     if args.get("head"):
         return tickets[:args["head"]]
     if args.get("tail"):
         return tickets[-args["tail"]:]
+
+    # no cropping
+    return tickets
+
+
 

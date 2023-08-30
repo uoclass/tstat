@@ -11,5 +11,6 @@
     "anddiagnoses": null,
     "head": null,
     "tail": null,
+    "prune": null,
     "querytype": "perweek"
 }
