@@ -1,2 +1,2 @@
-ID,Title,Resp Group,Requestor,Requestor Email,Requestor Phone,Acct/Dept,Class Support Building,Room number,Classroom Problem Types,Created,Modified,Status
+ID,Title,Resp Group,Requestor,Requestor Email,Requestor Phone,Acct/Dept,Location,Location Room,Classroom Problem Types,Created,Modified,Status
 12345678,My Ticket,USS-Classrooms,Sir Example,example@example.com,5555555555,Based Department,The Building,111,"Projector, TV Display, Cable--HDMI",7/14/2023 10:41,7/14/2023 10:41,Closed

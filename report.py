@@ -174,9 +174,9 @@ def get_fields_present(csv_ticket: dict) -> Union[list[str], None]:
             if csv_ticket.get(csv_column_name) is not None:
                 attribute_present = True
                 fields_present.append(attribute)
-            # check if it is a legacy field so we can warn later
-            if csv_column_name != STANDARD_FIELDS[attribute][0]:
-                legacy_fields.append((csv_column_name, STANDARD_FIELDS[attribute][0]))
+                # check if it is a legacy field so we can warn later
+                if csv_column_name != STANDARD_FIELDS[attribute][0]:
+                    legacy_fields.append((csv_column_name, STANDARD_FIELDS[attribute][0]))
         # if none of acceptable column names found, attribute missing
         if not attribute_present:
             missing_fields.append(attribute)
