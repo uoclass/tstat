@@ -168,7 +168,7 @@ def crop_counts(labels: list[str], counts: list[int], args) -> tuple[list[str], 
         return labels[:args["head"]], counts[:args["head"]]
     if args.get("tail"):
         return labels[-args["tail"]:], counts[-args["tail"]:]
-    if len(counts) >= PRUNE_COUNT and args.get("prune") != False:
+    if args.get("prune") or (len(counts) >= PRUNE_COUNT and args.get("prune") != False):
         # prune the graph by removing 0 counts
         return prune_counts()
 

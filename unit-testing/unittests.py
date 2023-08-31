@@ -1091,6 +1091,107 @@ class TestReport(unittest.TestCase):
         self.assertEqual(part_report.fields_present, ["id", "title", "responsible_group", "department", "status"])
         self.assertEqual(part_report.time_format, None)
 
+class TestVisual(unittest.TestCase):
+    """
+    Test cases for visual.py,
+    Does not yet include test for graphing functions.
+    """
+
+    def test_crop_counts(self):
+        """
+        Test cases for crop_counts() method.
+        """
+        # setup
+        source_labels: list[str] = ["label 5", "label 4", "label 3", "label 2", "label 1", "empty 1", "empty 2"]
+        source_counts: list[str] = [5, 4, 3, 2, 1, 0, 0]
+        cropped_labels: list[str]
+        cropped_counts: list[int]
+
+        # test for head
+        args: dict = {"head": 6}
+        expected_labels: list[str] = ["label 5", "label 4", "label 3", "label 2", "label 1", "empty 1"]
+        expected_counts: list[str] = [5, 4, 3, 2, 1, 0]
+        cropped_labels, cropped_counts = crop_counts(source_labels, source_counts, args)
+        self.assertEqual(cropped_labels, expected_labels)
+        self.assertEqual(cropped_counts, expected_counts)
+
+        # test for tail
+        args = {"tail": 4}
+        expected_labels = ["label 2", "label 1", "empty 1", "empty 2"]
+        expected_counts = [2, 1, 0, 0]
+        cropped_labels, cropped_counts = crop_counts(source_labels, source_counts, args)
+        self.assertEqual(cropped_labels, expected_labels)
+        self.assertEqual(cropped_counts, expected_counts)
+
+        # test for prune
+        # specified by arg
+        args = {"prune": True}
+        expected_labels = ["label 5", "label 4", "label 3", "label 2", "label 1"]
+        expected_counts = [5, 4, 3, 2, 1]
+        cropped_labels, cropped_counts = crop_counts(source_labels, source_counts, args)
+        self.assertEqual(cropped_labels, expected_labels)
+        self.assertEqual(cropped_counts, expected_counts)
+
+        # by length of labels
+        source_labels = ["15", "14", "13", "12", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "0"]
+        source_counts = [0, 0, 0, 0, 0, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+        args = {}
+        expected_labels = ["10", "9", "8", "7", "6", "5", "4", "3", "2", "1"]
+        expected_counts = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+        cropped_labels, cropped_counts = crop_counts(source_labels, source_counts, args)
+        self.assertEqual(cropped_labels, expected_labels)
+        self.assertEqual(cropped_counts, expected_counts)
+
+        # many labels but overriden by arg
+        args = {"prune": False}
+        cropped_labels, cropped_counts = crop_counts(source_labels, source_counts, args)
+        self.assertEqual(cropped_labels, source_labels)
+        self.assertEqual(cropped_counts, source_counts)
+
+    def test_crop_tickets(self):
+        """
+        Test cases for crop_tickets() method.
+        """
+        # setup
+        report: Report = Report("unit-testing/querytests1.csv")
+        org: Organization = Organization()
+        report.populate(org)
+        source_list: list[Ticket] = [
+            org.tickets[0],
+            org.tickets[1],
+            org.tickets[2],
+            org.tickets[3],
+            org.tickets[4],
+            org.tickets[5],
+            org.tickets[6],
+            org.tickets[7],
+            org.tickets[8],
+            org.tickets[9]
+        ]
+
+        # test head
+        args: dict = {"head": 5}
+        expected_list: list[Ticket] = [
+            org.tickets[0],
+            org.tickets[1],
+            org.tickets[2],
+            org.tickets[3],
+            org.tickets[4]
+        ]
+        cropped_list: list[Ticket] = crop_tickets(source_list, args)
+        self.assertEqual(expected_list, cropped_list)
+
+        # test tail
+        args: dict = {"tail": 4}
+        expected_list: list[Ticket] = [
+            org.tickets[6],
+            org.tickets[7],
+            org.tickets[8],
+            org.tickets[9]
+        ]
+        cropped_list: list[Ticket] = crop_tickets(source_list, args)
+        self.assertEqual(expected_list, cropped_list)
+
 
 if __name__ == "__main__":
     try:
