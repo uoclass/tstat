@@ -117,9 +117,8 @@ tickets: {len(self.tickets)}"""
                         matches.append(found)
             return matches
 
-        # check that at least one arg present
         if not (email or name or phone or create_mode):
-            raise ValueError("No args passed into find_user()")
+            return []
 
         # run appropriate lookup
         lookup_results: list[User] = []
@@ -327,8 +326,9 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
     term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
-    # requestor filter is a string which may match email, name, or phone
-    requestor: str = None if "requestor" in exclude else args.get("requestor")
+
+    # requestor filter is list, as multiple matches are possible
+    requestors: list[User] = None if "requestors" in exclude else args.get("requestors")
 
     # handle diagnoses
     diagnoses_strings: list[str] = []
@@ -351,11 +351,7 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     for ticket in tickets:
         if building and ticket.room.building != building:
             continue
-        if requestor and requestor not in [
-            ticket.requestor.email,
-            ticket.requestor.name,
-            ticket.requestor.phone
-        ]:
+        if requestors and ticket.requestor not in requestors:
             continue
         if term_start and ticket.created < term_start:
             continue

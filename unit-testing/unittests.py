@@ -302,7 +302,7 @@ class TestOrganization(unittest.TestCase):
             "termstart": datetime(2023, 4, 11),
             "termend": datetime(2023, 5, 29),
             "building": org.find_building("Building3"),
-            "requestor": "requestor1@example.com"
+            "requestors": org.find_user(email="requestor1@example.com")
         }
         ticket_dict: dict[int, Ticket] = org.tickets
         ticket_list: list[Ticket] = list(org.tickets.values())
@@ -319,7 +319,7 @@ class TestOrganization(unittest.TestCase):
         ]
         for type in [ticket_dict, ticket_list]:
             # also test exclude list
-            filtered: list[Ticket] = filter_tickets(type, args, ["building", "requestor"])
+            filtered: list[Ticket] = filter_tickets(type, args, ["building", "requestors"])
             self.assertEqual(filtered, expected)
 
         # building filter
@@ -333,7 +333,7 @@ class TestOrganization(unittest.TestCase):
         ]
         for type in [ticket_dict, ticket_list]:
             # also test exclude list
-            filtered: list[Ticket] = filter_tickets(type, args, ["termstart", "termend", "requestor"])
+            filtered: list[Ticket] = filter_tickets(type, args, ["termstart", "termend", "requestors"])
             self.assertEqual(filtered, expected)
 
         # termstart, termend, and building filters
@@ -346,7 +346,7 @@ class TestOrganization(unittest.TestCase):
         ]
         for type in [ticket_dict, ticket_list]:
             # also test exclude list
-            filtered: list[Ticket] = filter_tickets(type, args, ["requestor"])
+            filtered: list[Ticket] = filter_tickets(type, args, ["requestors"])
             self.assertEqual(filtered, expected)
 
         # requestor filter
@@ -498,7 +498,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(org.per_week(args), expected)
 
         # with requestor filter
-        args = {"termend": datetime(2023, 6, 29), "requestor": "requestor2@example.com"}
+        args = {"termend": datetime(2023, 6, 29), "requestors": org.find_user(email="requestor2@example.com")}
         expected = {
             datetime(2023, 4, 3): 0,
             datetime(2023, 4, 10): 0,
@@ -572,7 +572,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(org.per_building(args), expected)
 
         # with requestor filter
-        args = {"requestor": "requestor1@example.com"}
+        args = {"requestors": org.find_user(email="requestor1@example.com")}
         expected = {
             building1: 1,
             building2: 3,
@@ -631,7 +631,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(org.per_room(args), expected)
 
         # requestor filter
-        args = {"requestor": "requestor1@example.com"}
+        args = {"requestors": org.find_user(email="requestor1@example.com")}
         expected = {
             building1.rooms["1"]: 1,
             building2.rooms["1"]: 1,
@@ -827,7 +827,7 @@ class TestCli(unittest.TestCase):
         self.assertRaises(BadArgError, main, argv)
 
         # perrequestor stipulations
-        argv = ["--debug", "--nographics", "-q", "perrequestor", "--requestor", "requestor1@example.com",
+        argv = ["--debug", "--nographics", "-q", "perrequestor", "--remail", "requestor1@example.com",
                 "--localreport", "unit-testing/minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
@@ -889,7 +889,7 @@ class TestCli(unittest.TestCase):
 
         # sample config 1 (no localreport)
         argv = ["--debug", "--nographics", "--saveconfig", "unit-testing/generated-config1.json", "-q", "perweek",
-                "--building", "Building3", "--requestor", "requestor2@example.com", "--termstart", "5/15/2023",
+                "--building", "Building3", "--remail", "requestor2@example.com", "--termstart", "5/15/2023",
                 "--weeks", "5"]
         main(argv)
         expected_file: typing.TextIO = open("unit-testing/expected-config1.json", "r")
@@ -938,7 +938,10 @@ class TestCli(unittest.TestCase):
             "termend": None,
             "weeks": 5,
             "building": org.find_building("Building3"),
-            "requestor": "requestor2@example.com",
+            "requestors": org.find_user(email="requestor2@example.com"),
+            "remail": "requestor2@example.com",
+            "rname": None,
+            "rphone": None,
             "diagnoses": None,
             "anddiagnoses": None,
             "head": None,
@@ -960,7 +963,9 @@ class TestCli(unittest.TestCase):
             "termend": datetime(2023, 6, 16),
             "weeks": None,
             "building": None,
-            "requestor": None,
+            "remail": None,
+            "rname": None,
+            "rphone": None,
             "diagnoses": ["Cable--HDMI", "Cable-Ethernet"],
             "anddiagnoses": None,
             "head": 3,
@@ -984,7 +989,9 @@ class TestCli(unittest.TestCase):
             "termend": "",
             "weeks": 10,
             "building": "The Building",
-            "requestor": None,
+            "remail": None,
+            "rname": None,
+            "rphone": None,
             "diagnoses": "",
             "anddiagnoses": "Projector, TV Display, Cable--HDMI",
             "head": 0,
@@ -999,7 +1006,9 @@ class TestCli(unittest.TestCase):
             "termend": None,
             "weeks": 10,
             "building": org.find_building("The Building"),
-            "requestor": None,
+            "remail": None,
+            "rname": None,
+            "rphone": None,
             "diagnoses": None,
             "anddiagnoses": ["Projector", "TV Display", "Cable--HDMI"],
             "head": None,

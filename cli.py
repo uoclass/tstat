@@ -27,8 +27,10 @@ DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%
 QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor", "showtickets"]
 DEFAULT_TRACEBACK = 0
 DEBUG_TRACEBACK = 3
-ARGS_KEYS = ["localreport", "name", "color", "termstart", "termend", "weeks", "building", "requestor", "diagnoses",
-             "anddiagnoses", "head", "tail", "querytype"]
+
+# for common args passed by user (not incl. debug args and args set by program)
+ARGS_KEYS = ["localreport", "name", "color", "termstart", "termend", "weeks", "building", "remail", "rname", "rphone",
+             "diagnoses", "anddiagnoses", "head", "tail", "querytype"]
 
 
 class BadArgError(ValueError):
@@ -103,8 +105,9 @@ def check_options(args: dict) -> None:
         raise BadArgError(f"Cannot pass --weeks {args['weeks']}, use at least 1 week")
 
     # Stipulations for perrequestor
-    if args["querytype"] == "perrequestor" and args.get("requestor"):
-        raise BadArgError("Cannot pass --requestor filter with perrequestor query")
+    if args["querytype"] == "perrequestor" and \
+       (args.get("remail") or args.get("rname") or args.get("rphone")):
+        raise BadArgError("Cannot pass any requestor filters with perrequestor query")
 
     # Stipulations for showtickets
     if args["querytype"] == "showtickets" and args.get("prune"):
@@ -132,6 +135,23 @@ def clean_args(args: dict, org: Organization) -> None:
         args["building"] = org.find_building(args["building"])
         if not args["building"]:
             raise BadArgError("No such building found in report")
+
+    # find actual requestor object
+    if args.get("remail") or args.get("rname") or args.get("rphone"):
+        requestors_filter: list[User] = org.find_user(args.get("remail"),
+                                          args.get("rname"),
+                                          args.get("rphone"))
+        # print message based on number of matches
+        if len(requestors_filter) == 1:
+            print(f"Filtering to requestor {requestors_filter[0]}")
+        elif len(requestors_filter) > 1:
+            print("Filtering to multiple matching requestors:")
+            for requestor in requestors_filter:
+                print(f"    {requestor}")
+        else:
+            raise BadArgError("No requestors found in report matching given filters")
+        # set args dict to list of actual requestor objects
+        args["requestors"] = requestors_filter
 
     # split up diagnoses list
     if args.get("diagnoses"):
@@ -208,7 +228,10 @@ def parser_setup():
                         help="Exclude tickets after this date (calendar week for --perweek)")
     parser.add_argument("-w", "--weeks", type=int, help="Set number of weeks in the term for --perweek")
     parser.add_argument("-b", "--building", type=str, help="Specify building filter.")
-    parser.add_argument("-u", "--requestor", type=str, help="Specify requestor filter.")
+    # requestor filters
+    parser.add_argument("--remail", type=str, help="Specify requestor email.")
+    parser.add_argument("--rname", type=str, help="Specify requestor name.")
+    parser.add_argument("--rphone", type=str, help="Specify requestor phone.")
 
     # two possible diagnoses filters (OR search, AND search)
     diag_group = parser.add_mutually_exclusive_group(required=False)
