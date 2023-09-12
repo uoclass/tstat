@@ -1,5 +1,5 @@
 """
-Ticket Report for tdxplot
+Ticket Report for tstat
 by Eric Edwards, Alex JPS
 2023-06-30
 

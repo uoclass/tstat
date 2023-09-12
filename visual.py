@@ -1,5 +1,5 @@
 """
-Data Visualization for tdxplot
+Data Visualization for tstat
 by Alexa Roskowski, Alex JPS
 2023-07-06
 

@@ -1,5 +1,5 @@
 """
-Ticket Classes for tdxplot
+Ticket Classes for tstat
 by Eric Edwards, Alex JPS
 2023-06-23
 

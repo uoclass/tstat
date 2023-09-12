@@ -1,5 +1,5 @@
 """
-Ticket Organization for tdxplot
+Ticket Organization for tstat
 by Eric Edwards, Alex JPS
 2023-06-23
 
