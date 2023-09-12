@@ -21,6 +21,13 @@ from report import *
 from organization import *
 from visual import *
 
+# program and release information
+PROGRAM_NAME = "TdxPlot CLI"
+RELEASE_VERSION = """(not a release build)
+Run git log to view last commit
+Download latest release from https://github.com/uoclass/tdxplot/releases"""
+PROGRAM_AUTHORS = "by Alex JPS, Eric Edwards, Alexa Roskowski"
+
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"]
 DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%m.%y"]
@@ -28,9 +35,14 @@ QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor", "showtickets
 DEFAULT_TRACEBACK = 0
 DEBUG_TRACEBACK = 3
 
-# for common args passed by user (not incl. debug args and args set by program)
-ARGS_KEYS = ["localreport", "name", "color", "termstart", "termend", "weeks", "building", "remail", "rname", "rphone",
-             "diagnoses", "anddiagnoses", "head", "tail", "querytype"]
+# for args that may be included in a config file
+STANDARD_ARGS = ["localreport", "name", "color", "termstart", "termend", "weeks", "building", "remail", "rname",
+                 "rphone", "diagnoses", "anddiagnoses", "head", "tail", "querytype"]
+# args that should not be in a config file
+EXCLUDE_ARGS = ["version", "debug", "nographics", "printquery", "saveconfig", "config"]
+
+
+# exclude from config files
 
 
 class BadArgError(ValueError):
@@ -106,7 +118,7 @@ def check_options(args: dict) -> None:
 
     # Stipulations for perrequestor
     if args["querytype"] == "perrequestor" and \
-       (args.get("remail") or args.get("rname") or args.get("rphone")):
+            (args.get("remail") or args.get("rname") or args.get("rphone")):
         raise BadArgError("Cannot pass any requestor filters with perrequestor query")
 
     # Stipulations for showtickets
@@ -139,8 +151,8 @@ def clean_args(args: dict, org: Organization) -> None:
     # find actual requestor object
     if args.get("remail") or args.get("rname") or args.get("rphone"):
         requestors_filter: list[User] = org.find_user(args.get("remail"),
-                                          args.get("rname"),
-                                          args.get("rphone"))
+                                                      args.get("rname"),
+                                                      args.get("rphone"))
         # print message based on number of matches
         if len(requestors_filter) == 1:
             print(f"Filtering to requestor {requestors_filter[0]}")
@@ -161,7 +173,7 @@ def clean_args(args: dict, org: Organization) -> None:
 
     # set zeroes and empty strings to None
     # helps user pass empty quotes to override json args to None
-    for key in ARGS_KEYS:
+    for key in STANDARD_ARGS:
         if args.get(key) == "":
             print(f"Empty value passed for {key}, ignoring")
             args[key] = None
@@ -204,6 +216,9 @@ def parser_setup():
     Return the parser.
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
+
+    # display version
+    parser.add_argument("--version", action="store_true", help="Display program version")
 
     # file io flags
     config_group = parser.add_mutually_exclusive_group(required=False)
@@ -291,17 +306,15 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
 
     return query_result
 
+
 def save_config(args_dict: dict, config_path: str):
     """
     Save current arguments into loadable JSON configuration file.
     """
 
     # remove unneeded arguments for config file
-    args_dict.pop("saveconfig")
-    args_dict.pop("config")
-    args_dict.pop("debug")
-    args_dict.pop("nographics")
-    args_dict.pop("printquery")
+    for arg in EXCLUDE_ARGS:
+        args_dict.pop(arg)
 
     # add correct file extension
     if not config_path.endswith(".json"):
@@ -327,7 +340,7 @@ def load_config(args: dict):
 
     # loop thru standard args dict keys
     # substitute json values with user-provided values (if any)
-    for arg in ARGS_KEYS:
+    for arg in STANDARD_ARGS:
         if args.get(arg) is None:
             args[arg] = json_args.get(arg)
 
@@ -341,13 +354,18 @@ def main(argv) -> None:
     sys.tracebacklimit = DEFAULT_TRACEBACK
 
     # need arguments
-    if len(argv) < 2:
+    if len(argv) < 1:
         raise BadArgError("No arguments provided")
 
     # set up parsers and parse into dict
     parser: argparse.ArgumentParser = parser_setup()
 
     args: dict = vars(parser.parse_args(argv))
+
+    # display version if requested
+    if args.get("version"):
+        print(f"{PROGRAM_NAME} {RELEASE_VERSION}\n{PROGRAM_AUTHORS}")
+        exit()
 
     # set debug mode
     sys.tracebacklimit = DEBUG_TRACEBACK if args.get("debug") else DEFAULT_TRACEBACK
