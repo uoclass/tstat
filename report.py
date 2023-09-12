@@ -111,12 +111,21 @@ class Report:
 
         # use find methods set OrganizationEntity objects
         new_ticket.responsible_group = org.find_group(get_attribute("responsible_group"), create_mode=True)
-        new_ticket.requestor = org.find_user(get_attribute("requestor_email"),
-                                             get_attribute("requestor_name"),
-                                             get_attribute("requestor_phone"), create_mode=True)
         new_ticket.department = org.find_department(get_attribute("department"), create_mode=True)
         new_ticket.room = org.find_room(get_attribute("building"),
                                         get_attribute("room_identifier"), create_mode=True)
+        # some extra steps for Requestor because find_user() takes multiple args
+        # pass "Undefined" for blanks so no "partial matches" (e.g. same email but missing name)
+        requestor_email: str = get_attribute("requestor_email") if get_attribute("requestor_email") else "Undefined"
+        requestor_name: str = get_attribute("requestor_name") if get_attribute("requestor_name") else "Undefined"
+        requestor_phone: str = get_attribute("requestor_phone") if get_attribute("requestor_email") else "Undefined"
+        requestor_lookup: list[User] = org.find_user(requestor_email, requestor_name, requestor_phone, create_mode=True)
+        # make sure only 1 user is returned on find_user()
+        if len(requestor_lookup) != 1:
+            raise ValueError("""Multiple or no requestor objects found for one ticket in populate() method
+Possible bad usage of find_user() method""")
+        assert isinstance(requestor_lookup[0], User)
+        new_ticket.requestor = requestor_lookup[0]
 
         # ID should be an int
         id_attribute: str = get_attribute("id")

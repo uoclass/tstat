@@ -133,18 +133,6 @@ def clean_args(args: dict, org: Organization) -> None:
         if not args["building"]:
             raise BadArgError("No such building found in report")
 
-    # lookup requestor by email, name, or phone
-    if args.get("requestor"):
-        lookup = args["requestor"]
-        requestor: User = org.find_user(email=lookup)
-        if not requestor:
-            requestor = org.find_user(name=lookup)
-        if not requestor:
-            requestor = org.find_user(phone=lookup)
-        if not requestor:
-            raise BadArgError("No such requestor found in report")
-        args["requestor"] = requestor
-
     # split up diagnoses list
     if args.get("diagnoses"):
         args["diagnoses"] = args["diagnoses"].split(", ")
@@ -245,7 +233,7 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
     Return results, call appropriate visual.py function.
     """
     query_type: dict = args["querytype"]
-    query_result: dict
+    query_result: Union[dict, list[Ticket]] = {}
 
     # determine query, run, and save results
     if query_type == "perweek":
@@ -275,12 +263,10 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
         query_result = tickets_matched
 
     # print query results if option enabled
-    if args.get("printquery"):
+    if args.get("printquery") and args["querytype"] != "showtickets":
         print(query_result)
 
     return query_result
-
-
 
 def save_config(args_dict: dict, config_path: str):
     """

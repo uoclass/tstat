@@ -24,7 +24,7 @@ class Organization:
     In this case, the organization is the University of Oregon.
     """
     buildings: dict[str, Building]
-    users: dict[str, User]
+    users: dict[str, list[User]]
     departments: dict[str, Department]
     groups: dict[str, Group]
     tickets: dict[int, Ticket]
@@ -79,42 +79,72 @@ tickets: {len(self.tickets)}"""
             return self.groups[name]
         return None
 
-    def find_user(self, email: str = None, name: str = None, phone: str = None, create_mode: bool = False) -> User:
+    def find_user(self, email: str = None, name: str = None, phone: str = None, create_mode: bool = False) -> list[
+        User]:
         """
-        Return user with all of given properies, if exists.
+        Return list of users with all given properies.
         Provide email for fast result (hash lookup).
         Giving only name and/or phone is slower (loop).
-        Otherwise add new user with given info and return.
+        If create_mode, create and return user if not found.
         """
-        # fast lookup via email
+
+        def email_lookup() -> list[User]:
+            """
+            Fast dict lookup via email.
+            """
+            if not self.users.get(email):
+                return []
+            if not (name or phone):
+                # just return user list at given key
+                return self.users.get(email)
+            # lookup via email but match other attributes too
+            matches: list[User] = []
+            for found in self.users.get(email):
+                if (not name or name == found.name) and \
+                        (not phone or phone == found.phone):
+                    matches.append(found)
+            return matches
+
+        def name_phone_lookup() -> list[User]:
+            """
+            Iterate thru all users for name and/or phone.
+            """
+            matches: list[User] = []
+            for key in self.users.keys():
+                for found in self.users[key]:
+                    if (not name or name == found.name) and \
+                            (not phone or phone == found.phone):
+                        matches.append(found)
+            return matches
+
+        # check that at least one arg present
+        if not (email or name or phone or create_mode):
+            raise ValueError("No args passed into find_user()")
+
+        # run appropriate lookup
+        lookup_results: list[User] = []
         if email:
-            found: User = self.users.get(email)
-            if found and \
-                (not name or found.name == name) and \
-                (not phone or found.phone == phone):
-                return self.users[email]
+            lookup_results = email_lookup()
         elif name or phone:
-            # no email, try looping
-            for key in self.users:
-                current: User = self.users[key]
-                if email and current.email != email:
-                    continue
-                if name and current.name != name:
-                    continue
-                if phone and current.phone != phone:
-                    continue
-                return current
+            lookup_results = name_phone_lookup()
+
+        # return if anything found
+        if lookup_results:
+            return lookup_results
 
         # nothing found, so create if allowed
         if create_mode:
-            email = email if email else "Undefined"
-            name = name if name else "Undefined"
-            phone = phone if phone else "Undefined"
-            self.users[email] = User(email, name, phone)
-            return self.users[email]
+            user_email = email if email else "Undefined"
+            user_name = name if name else "Undefined"
+            user_phone = phone if phone else "Undefined"
+            if not self.users.get(user_email):
+                self.users[user_email] = []
+            new_user: User = User(user_email, user_name, user_phone)
+            self.users[user_email].append(new_user)
+            return [new_user]
 
         # nothing found and no creating
-        return None
+        return []
 
     def find_department(self, name: str = "Undefined", create_mode: bool = False) -> Department:
         """
@@ -264,9 +294,9 @@ tickets: {len(self.tickets)}"""
         This information is meant to be used as input for graphing purposes.
         """
         requestor_count: dict[User, int] = {}
-        for requestor_id in self.users:
-            requestor = self.users[requestor_id]
-            requestor_count[requestor] = len(filter_tickets(requestor.tickets, args))
+        for key in self.users.keys():
+            for requestor in self.users[key]:
+                requestor_count[requestor] = len(filter_tickets(requestor.tickets, args))
 
         # return dict of counts per requestor
         return requestor_count
@@ -297,12 +327,13 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
     term_end: datetime = None if "termend" in exclude else args.get("termend")
     building: Building = None if "building" in exclude else args.get("building")
-    requestor: User = None if "requestor" in exclude else args.get("requestor")
+    # requestor filter is a string which may match email, name, or phone
+    requestor: str = None if "requestor" in exclude else args.get("requestor")
 
     # handle diagnoses
     diagnoses_strings: list[str] = []
     diagnoses: list[Diagnosis] = []
-    and_diagnoses: bool
+    and_diagnoses: bool = False
     if args.get("diagnoses"):
         and_diagnoses = False
         diagnoses_strings = args["diagnoses"]
@@ -320,7 +351,11 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     for ticket in tickets:
         if building and ticket.room.building != building:
             continue
-        if requestor and ticket.requestor != requestor:
+        if requestor and requestor not in [
+            ticket.requestor.email,
+            ticket.requestor.name,
+            ticket.requestor.phone
+        ]:
             continue
         if term_start and ticket.created < term_start:
             continue

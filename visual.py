@@ -99,7 +99,7 @@ def view_show_tickets(tickets_matched: list["Ticket"], args: dict) -> None:
     # crop for head or tail args
     tickets_matched = crop_tickets(tickets_matched, args)
     # print remaining tickets
-    print("Matching tickets")
+    print(f"Matching tickets ({len(tickets_matched)})")
     print("----------------")
     for ticket in tickets_matched:
         print(ticket)

@@ -28,7 +28,7 @@ class TestOrganization(unittest.TestCase):
         org = Organization()
         building1: Building = org.find_building("Building", create_mode=True)
         room1: Room = org.find_room("Building", "1", create_mode=True)
-        user1: User = org.find_user("User", create_mode=True)
+        user1: User = org.find_user("User", create_mode=True)[0]
         group1: Group = org.find_group("Group", create_mode=True)
         dept1: Department = org.find_department("Department", create_mode=True)
 
@@ -87,45 +87,78 @@ class TestOrganization(unittest.TestCase):
         """
         org = Organization()
 
-        # returns None for nonexistent user
-        no_user: User = org.find_user("realemail@email.net", "AJ", "541541541")
-        self.assertEqual(no_user, None)
+        # returns empty list for nonexistent user
+        no_user_list: list[User] = org.find_user("realemail@email.net", "AJ", "541541541")
+        print(f"no user list is {no_user_list}")
+        self.assertEqual(no_user_list, [])
 
         # returns and adds new user when create_mode
-        new_user: User = org.find_user("realemail@email.net", "AJ", "541541541", create_mode=True)
+        new_user_list: list[User] = org.find_user("realemail@email.net", "AJ", "541541541", create_mode=True)
+        self.assertEqual(len(new_user_list), 1)
+        new_user: User = new_user_list[0]
         self.assertTrue(isinstance(new_user, User))
-        self.assertEqual(new_user, org.users["realemail@email.net"])
+        self.assertEqual([new_user], org.users["realemail@email.net"])
         self.assertEqual(new_user.email, "realemail@email.net")
         self.assertEqual(new_user.name, "AJ")
         self.assertEqual(new_user.phone, "541541541")
 
         # "Undefined" attributes when omitted
-        empty_user: User = org.find_user(create_mode=True)
+        empty_user_list: list[User] = org.find_user(create_mode=True)
+        self.assertEqual(len(empty_user_list), 1)
+        empty_user: User = empty_user_list[0]
         self.assertEqual(empty_user.email, "Undefined")
         self.assertEqual(empty_user.name, "Undefined")
         self.assertEqual(empty_user.phone, "Undefined")
 
         # "Undefined" attributes when None passed
-        none_user: User = org.find_user(None, None, None, create_mode=True)
+        none_user_list: list[User] = org.find_user(None, None, None, create_mode=True)
+        self.assertEqual(len(none_user_list), 1)
+        none_user: User = none_user_list[0]
         self.assertEqual(none_user.email, "Undefined")
         self.assertEqual(none_user.name, "Undefined")
         self.assertEqual(none_user.phone, "Undefined")
 
         # returns existing user now
-        my_user: User = org.find_user("realemail@email.net")
+        my_user_list: list[User] = org.find_user("realemail@email.net")
+        self.assertEqual(len(my_user_list), 1)
+        my_user: User = my_user_list[0]
         self.assertEqual(my_user, new_user)
 
         # also works with name or phone or both
-        my_user = org.find_user(name="AJ")
+        my_user = org.find_user(name="AJ")[0]
         self.assertEqual(my_user, new_user)
-        my_user = org.find_user(phone="541541541")
+        my_user = org.find_user(phone="541541541")[0]
         self.assertEqual(my_user, new_user)
-        my_user = org.find_user(None, "AJ", "541541541")
+        my_user = org.find_user(None, "AJ", "541541541")[0]
         self.assertEqual(my_user, new_user)
 
-        # still returns existing group when create_mode
-        same_user: User = org.find_user("realemail@email.net", create_mode=True)
+        # still returns existing user when create_mode
+        same_user_list: list[User] = org.find_user("realemail@email.net", create_mode=True)
+        self.assertEqual(len(same_user_list), 1)
+        same_user: User = same_user_list[0]
         self.assertEqual(same_user, new_user)
+
+        # tests involving multiple users with similar information
+        org = Organization()
+
+        # correctly creates 4 disparate users
+        org.find_user("joe@joe.com", "Joe the Plumber", "0123456789", create_mode=True)
+        org.find_user("joe@joe.com", "Joe the Carpenter", "0123456789", create_mode=True)
+        org.find_user("joe@joe.com", "Joe the Baker", "0123456789", create_mode=True)
+        org.find_user("joe@joe.com", "Undefined", "Undefined", create_mode=True)
+        self.assertEqual(len(org.users["joe@joe.com"]), 4)
+
+        # ommitting name and phone matches all users
+        all_joes: list[User] = org.find_user(email="joe@joe.com")
+        self.assertEqual(all_joes, org.users["joe@joe.com"])
+
+        # ommitting name matches users with same email and phone
+        most_joes: list[User] = org.find_user(email="joe@joe.com", phone="0123456789")
+        self.assertEqual(most_joes, org.users["joe@joe.com"][:3])
+
+        # including a specific name, email, and phone matches one user
+        just_joe: User = org.find_user("joe@joe.com", "Joe the Baker", "0123456789")[0]
+        self.assertEqual(just_joe, org.users["joe@joe.com"][2])
 
     def test_find_department(self):
         """
@@ -269,7 +302,7 @@ class TestOrganization(unittest.TestCase):
             "termstart": datetime(2023, 4, 11),
             "termend": datetime(2023, 5, 29),
             "building": org.find_building("Building3"),
-            "requestor": org.find_user("requestor1@example.com")
+            "requestor": "requestor1@example.com"
         }
         ticket_dict: dict[int, Ticket] = org.tickets
         ticket_list: list[Ticket] = list(org.tickets.values())
@@ -465,7 +498,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(org.per_week(args), expected)
 
         # with requestor filter
-        args = {"termend": datetime(2023, 6, 29), "requestor": org.find_user("requestor2@example.com")}
+        args = {"termend": datetime(2023, 6, 29), "requestor": "requestor2@example.com"}
         expected = {
             datetime(2023, 4, 3): 0,
             datetime(2023, 4, 10): 0,
@@ -539,7 +572,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(org.per_building(args), expected)
 
         # with requestor filter
-        args = {"requestor": org.find_user("requestor1@example.com")}
+        args = {"requestor": "requestor1@example.com"}
         expected = {
             building1: 1,
             building2: 3,
@@ -598,7 +631,7 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(org.per_room(args), expected)
 
         # requestor filter
-        args = {"requestor": org.find_user("requestor1@example.com")}
+        args = {"requestor": "requestor1@example.com"}
         expected = {
             building1.rooms["1"]: 1,
             building2.rooms["1"]: 1,
@@ -661,9 +694,9 @@ class TestQueries(unittest.TestCase):
         org = Organization()
         report = Report("unit-testing/querytests1.csv")
         report.populate(org)
-        requestor1: User = org.find_user("requestor1@example.com")
-        requestor2: User = org.find_user("requestor2@example.com")
-        requestor3: User = org.find_user("requestor3@example.com")
+        requestor1: User = org.find_user("requestor1@example.com")[0]
+        requestor2: User = org.find_user("requestor2@example.com")[0]
+        requestor3: User = org.find_user("requestor3@example.com")[0]
 
         # no args
         args: dict = {}
@@ -905,7 +938,7 @@ class TestCli(unittest.TestCase):
             "termend": None,
             "weeks": 5,
             "building": org.find_building("Building3"),
-            "requestor": org.find_user("requestor2@example.com"),
+            "requestor": "requestor2@example.com",
             "diagnoses": None,
             "anddiagnoses": None,
             "head": None,
@@ -995,7 +1028,7 @@ class TestReport(unittest.TestCase):
         # all campus entities created
         group: Group = org.find_group("USS-Classrooms")
         self.assertTrue(group)
-        requestor: User = org.find_user("example@example.com", "Sir Example", "5555555555")
+        requestor: User = org.find_user("example@example.com", "Sir Example", "5555555555")[0]
         self.assertTrue(requestor)
         department: Department = org.find_department("Based Department")
         self.assertTrue(department)
@@ -1050,7 +1083,7 @@ class TestReport(unittest.TestCase):
         ticket: Ticket = report.dict_to_ticket(org, ticket_dict)
         expected = [(ticket.room, org.find_room("The Building", "111")),
                     (ticket.responsible_group, org.find_group("USS-Classrooms")),
-                    (ticket.requestor, org.find_user("example@example.com")),
+                    (ticket.requestor, org.find_user("example@example.com")[0]),
                     (ticket.department, org.find_department("Based Department"))]
 
         for pair in expected:
