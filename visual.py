@@ -11,6 +11,7 @@ Visualizes the data in appropriate format.
 from datetime import *
 import io
 from matplotlib import pyplot
+from ticketclasses import *
 
 # constants
 DEFAULT_COLOR = "gray"

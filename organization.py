@@ -15,7 +15,6 @@ from ticketclasses import *
 
 # Constants
 DEFAULT_WEEKS = 11
-DEFAULT_REQUESTORS = 15
 
 
 class Organization:
@@ -66,7 +65,7 @@ tickets: {len(self.tickets)}"""
         ticket.responsible_group.tickets.append(ticket)
         ticket.department.tickets.append(ticket)
 
-    def find_group(self, name: str = "Undefined", create_mode: bool = False) -> Group:
+    def find_group(self, name: str = "Undefined", create_mode: bool = False) -> Union[None, Group]:
         """
         Return group with name if already exists.
         Otherwise add new group and return.
@@ -145,7 +144,7 @@ tickets: {len(self.tickets)}"""
         # nothing found and no creating
         return []
 
-    def find_department(self, name: str = "Undefined", create_mode: bool = False) -> Department:
+    def find_department(self, name: str = "Undefined", create_mode: bool = False) -> Union[None, Department]:
         """
         Return department with name if already exists.
         Otherwise add new department and return.
@@ -160,7 +159,7 @@ tickets: {len(self.tickets)}"""
 
     def find_room(self, building_name: str = "Undefined",
                   room_identifier: str = "Undefined",
-                  create_mode: bool = False) -> Room:
+                  create_mode: bool = False) -> Union[None, Room]:
         """
         Return room with building name and identifier if already exists.
         Otherwise add new room or building as needed and return.
@@ -176,7 +175,7 @@ tickets: {len(self.tickets)}"""
                 return building.rooms[room_identifier]
         return None
 
-    def find_building(self, name: str = "Undefined", create_mode: bool = False) -> Building:
+    def find_building(self, name: str = "Undefined", create_mode: bool = False) -> Union[None, Building]:
         """
         Return building with name if already exists.
         If create_mode, return a new building if none found.
@@ -246,7 +245,7 @@ tickets: {len(self.tickets)}"""
         # return list of ticket counts per week
         return week_counts
 
-    def per_building(self, args: dict) -> dict[str, int]:
+    def per_building(self, args: dict) -> dict[Building, int]:
         """
         Return a dict counting tickets per building.
         This dict can be used as input to graph the information.
@@ -265,7 +264,7 @@ tickets: {len(self.tickets)}"""
         # return dict of counts per building
         return building_count
 
-    def per_room(self, args: dict) -> dict[str, int]:
+    def per_room(self, args: dict) -> dict[Room, int]:
         """
         Return a dict counting tickets per room within a given building.
         This information is meant to be used as input for graphing purposes.
@@ -287,7 +286,7 @@ tickets: {len(self.tickets)}"""
         # return dict of counts per room
         return room_count
 
-    def per_requestor(self, args: dict):
+    def per_requestor(self, args: dict) -> dict[User, int]:
         """
         Return a dict counting tickets by requestor within a given building.
         This information is meant to be used as input for graphing purposes.
@@ -303,7 +302,7 @@ tickets: {len(self.tickets)}"""
 
 # Helper functions
 
-def get_monday(date: datetime):
+def get_monday(date: datetime) -> datetime:
     """
     Given datetime, return Monday midnight of that week.
     """
