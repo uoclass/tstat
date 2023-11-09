@@ -41,6 +41,10 @@ STANDARD_ARGS = ["localreport", "name", "color", "termstart", "termend", "weeks"
 # args that should not be in a config file
 EXCLUDE_ARGS = ["version", "debug", "nographics", "printquery", "saveconfig", "config"]
 
+# default name of diagnoses aliases file
+DEFAULT_DIAGNOSES_ALIASES_FILE = "diagnoses.json"
+
+
 class BadArgError(ValueError):
     """
     Exception class for errors stemming from bad user input.
@@ -49,17 +53,22 @@ class BadArgError(ValueError):
     pass
 
 
-def check_file(filename: str):
+def check_file(filename: str, filetype: str) -> bool:
     """
-    Check that the given filename exists and is a CSV file.
+    True if given filename exists and is of desired type, else False.
+    This does not check for anything within contents of file itself.
     """
     if not filename:
-        raise BadArgError("No file input provided")
+        # no filename provided
+        return False
     filename.strip()
     if not (os.path.exists(filename)):
-        raise BadArgError(f"File {filename} not found. Include a valid filename as last argument")
-    if (os.path.splitext(filename)[-1].lower()) != ".csv":
-        raise BadArgError(f"File {filename} is not a CSV. Include a valid filename as last argument")
+        # file does not exist
+        return False
+    if (os.path.splitext(filename)[-1].lower()) != f".{filetype.lower()}":
+        # file extension not of desired filetype
+        return False
+    return True
 
 
 def get_datetime(date_text: str):
@@ -161,12 +170,6 @@ def clean_args(args: dict, org: Organization) -> None:
         # set args dict to list of actual requestor objects
         args["requestors"] = requestors_filter
 
-    # split up diagnoses list
-    if args.get("diagnoses"):
-        args["diagnoses"] = args["diagnoses"].split(", ")
-    if args.get("anddiagnoses"):
-        args["anddiagnoses"] = args["anddiagnoses"].split(", ")
-
     # set zeroes and empty strings to None
     # helps user pass empty quotes to override json args to None
     for key in STANDARD_ARGS:
@@ -185,6 +188,46 @@ def clean_args(args: dict, org: Organization) -> None:
             args["prune"] = False
         else:
             raise BadArgError("Pass either true or false for the prune argument")
+
+    # fix names of user-provided diagnoses
+    if args.get("diagnoses") or args.get("anddiagnoses"):
+        rename_diagnoses(args)
+
+def rename_diagnoses(args: dict):
+    """
+    Turn the user-provided diagnoses filter into a set using
+    diagnoses display names defined in diagnoses aliases file (if any).
+    The diagnoses aliases file in args["daliases"] is expected valid.
+    """
+    # check whether using "diagnoses" or "anddiagnoses" filter
+    diagnoses_filter_type: str
+    diagnoses_filter: str
+    if args.get("diagnoses"):
+        diagnoses_filter_type = "diagnoses"
+        diagnoses_filter = args["diagnoses"]
+    elif args.get("anddiagnoses"):
+        diagnoses_filter_type = "anddiagnoses"
+        diagnoses_filter = args["anddiagnoses"]
+    else:
+        # no diagnoses filtering at all
+        raise ValueError("Neither 'diagnoses' nor 'anddiagnoses' contain values")
+
+    # canonize and split string into list
+    canonized_diagnoses_filter: str = "".join(char for char in diagnoses_filter.lower() if char.isalpha() or char == ",")
+    diagnoses_list: list[str] = canonized_diagnoses_filter.split(",")
+
+    # if no alias mappings provided, finish here
+    if not args.get("daliases"):
+        args[diagnoses_filter_type] = set(diagnoses_list)
+
+    # diagnoses aliases file present, so replace diagnoses values with display names
+    aliases_file: typing.TextIO = open(args["daliases"], mode="r", encoding="utf-8-sig")
+    alias_mappings: dict[str, str] = json.load(aliases_file)
+    for i in range(len(diagnoses_list)):
+        if alias_mappings.get(diagnoses_list[i]):
+            diagnoses_list[i] = alias_mappings[diagnoses_list[i]]
+    aliases_file.close()
+    args[diagnoses_filter_type] = set(diagnoses_list)
 
 
 def check_report(args: dict, report: Report) -> None:
@@ -222,6 +265,7 @@ def parser_setup():
                               help="Save current arguments as a loadable config file with given file name")
     config_group.add_argument("--config", type=str, help="Load configuration file with filename")
     parser.add_argument("--localreport", "-l", type=str, help="Load report csv file")
+    parser.add_argument("--daliases", type=str, help="Load JSON mapping aliases to valid diagnoses names")
 
     # debug mode
     parser.add_argument("--debug", action="store_true", help="Show traceback for all errors")
@@ -341,6 +385,8 @@ def load_config(args: dict):
             args[arg] = json_args.get(arg)
 
 
+
+
 def main(argv) -> None:
     """
     Parse arguments, call basic input validation.
@@ -370,18 +416,34 @@ def main(argv) -> None:
         load_config(args)
 
     # atp we expect a fully completed args dict
+
     # check for errors in args
     check_options(args)
-    if args.get("localreport"):
-        check_file(args["localreport"])
 
-    # save the (now validated) config file if requested
+    # FIXME refactor the following section into a validity-checking function
+
+    # check for valid ticket report CSV
+    if args.get("localreport") and not check_file(args["localreport"], "CSV"):
+        raise BadArgError("Invalid local report CSV file provided")
+
+    # check for valid diagnoses JSON, if provided
+    if args.get("daliases"):
+        # make sure provided diagnoses aliases filename is valid file
+        if not check_file(args["daliases"], "JSON"):
+            raise BadArgError("Invalid diagnoses aliases JSON file provided")
+    elif check_file(DEFAULT_DIAGNOSES_ALIASES_FILE, "JSON"):
+        # use default diagnoses aliases filename if valid file
+        args["daliases"] = DEFAULT_DIAGNOSES_ALIASES_FILE
+
+    # save the (now validated) config to a file if requested
     if args.get("saveconfig"):
         save_config(args, args["saveconfig"])
         return
 
+    # FIXME end section to be refactored into validity-checking function
+
     # check report has enough info for query
-    report = Report(args["localreport"])
+    report = Report(args["localreport"], args["daliases"])
     check_report(args, report)
 
     # populate organization

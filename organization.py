@@ -330,17 +330,16 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     requestors: list[User] = None if "requestors" in exclude else args.get("requestors")
 
     # handle diagnoses
-    diagnoses_strings: list[str] = []
-    diagnoses: list[Diagnosis] = []
-    and_diagnoses: bool = False
+    # true if using "and" filtering (ticket must match all given diagnoses)
+    and_filtering: bool = False
+    diagnoses: set[str]
     if args.get("diagnoses"):
-        and_diagnoses = False
-        diagnoses_strings = args["diagnoses"]
-    if args.get("anddiagnoses"):
-        and_diagnoses = True
-        diagnoses_strings = args["anddiagnoses"]
-    for diagnosis in diagnoses_strings:
-        diagnoses.append(Diagnosis(diagnosis))
+        diagnoses = args["diagnoses"]
+    elif args.get("anddiagnoses"):
+        and_filtering = True
+        diagnoses = args["anddiagnoses"]
+    else:
+        diagnoses = set()
 
     # make term_end inclusive of last day
     if term_end:
@@ -357,18 +356,12 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
         if term_end and ticket.created > term_end:
             continue
         if diagnoses:
-            if and_diagnoses and not set(diagnoses).issubset(set(ticket.diagnoses)):
-                # all diagnoses must match for AND filter
+            if and_filtering and diagnoses.intersection(ticket.diagnoses) != diagnoses:
+                # ticket did not match all specified diagnoses ("and" filtering)
                 continue
-            if not and_diagnoses:
-                # only one diagnosis must match for OR filter
-                match: bool = False
-                for diagnosis in diagnoses:
-                    if diagnosis in ticket.diagnoses:
-                        match = True
-                        break
-                if not match:
-                    continue
+            elif not diagnoses.intersection(ticket.diagnoses):
+                # ticket did not match any of specified diagnoses
+                continue
         # add ticket if it passes all filters
         filtered.append(ticket)
     return filtered

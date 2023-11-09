@@ -118,30 +118,6 @@ class Status(Enum):
     SCHEDULED = 5
     OTHER = 6
 
-
-class Diagnosis(Enum):
-    ROOM_CAMERA = "HyFlex/Room Camera"
-    DISC_PLAYER = "Blu-Ray/DVD Player"
-    TOUCH_PANEL = "Touch Panel"
-    DOC_CAM = "Document Camera"
-    CABLE_HDMI = "Cable--HDMI"
-    CABLE_ETHERNET = "Cable-Ethernet"
-    CABLE_MISC = "Cable-Other (describe below)"
-    MICROPHONE = "Microphone"
-    ALS = "Assistive Listening Device"
-    PROJECTOR = "Projector"
-    TECH_TOUR = "Tech Tour"
-    TV_DISPLAY = "TV Display"
-    TRANSCIEVER = "Transmitter/Receiver"
-    DM_CONTROLLER = "DM Controller"
-    SCALER = "Scaler"
-    NETWORK_SWITCH = "Network Switch"
-    POWER_STRIP = "Power Strip/Surge Protector"
-    USER_ERROR = "User Error"
-    UNSUPPORTED = "Not a Classroom Support Issue"
-    SPAM = "Spam Call"
-    OTHER = "Other (provide description below)"
-
 class Ticket:
     id: int
     title: str
@@ -151,32 +127,24 @@ class Ticket:
     room: Room
     created: datetime
     modified: datetime
-    diagnosis: list[Diagnosis]
+    diagnoses: set[str]
     status: Status
 
     def __init__(self) -> None:
-        self.id = None
-        self.title = None
-        self.responsible_group = None
-        self.requestor = None
-        self.department = None
-        self.room = None
-        self.created = None
-        self.modified = None
-        self.diagnoses = []
-        self.status = None
+        """
+        A ticket does not do anything on initialization.
+        It is expected that Report.dict_to_ticket populates
+        the ticket attributes based on a CSV ticket.
+        """
+        pass
 
     def __str__(self) -> str:
         # diagnoses
-        diagnoses_string: str = ""
-        if len(self.diagnoses) == 0:
+        diagnoses_string: str
+        if not self.diagnoses:
             diagnoses_string = "None given"
         else:
-            for i in range(len(self.diagnoses)):
-                if i == 0:
-                    diagnoses_string += self.diagnoses[i].value
-                else:
-                    diagnoses_string += f", {self.diagnoses[i].value}"
+            diagnoses_string = ", ".join(diagnosis for diagnosis in self.diagnoses)
         return f"""{self.title}
 {TICKET_URL}{self.id}
 ID: {self.id}

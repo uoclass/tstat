@@ -21,6 +21,7 @@ DEFAULT_NAMES = {"perweek": "Tickets per Week",
                  "perrequestor": "Tickets per Requestor"}
 PRUNE_COUNT = 15
 
+
 def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
     """
     Display bar chart showing ticket counts per week.
@@ -47,6 +48,7 @@ def view_per_week(tickets_per_week: dict[datetime, int], args: dict) -> None:
         week_labels.append(label)
 
     bar_view(week_labels, week_counts, args)
+
 
 def view_per_building(tickets_per_building: dict["Building", int], args: dict) -> None:
     """
@@ -76,6 +78,7 @@ def view_per_room(tickets_per_room: dict["Room", int], args: dict) -> None:
 
     bar_view(room_labels, room_counts, args)
 
+
 def view_per_requestor(tickets_per_requestor: dict["User", int], args: dict) -> None:
     """
     Display bar chart showing ticket counts by requestor.
@@ -90,6 +93,7 @@ def view_per_requestor(tickets_per_requestor: dict["User", int], args: dict) -> 
         requestor_counts.append(count)
 
     bar_view(requestor_labels, requestor_counts, args)
+
 
 def view_show_tickets(tickets_matched: list["Ticket"], args: dict) -> None:
     """
@@ -135,10 +139,10 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
             rect.get_x() + rect.get_width() / 2,
             height + 0.01,
             c,
-            horizontalalignment = "center",
-            verticalalignment = "bottom",
-            color = "Black",
-            fontsize = "medium"
+            horizontalalignment="center",
+            verticalalignment="bottom",
+            color="Black",
+            fontsize="medium"
         )
 
     if args["querytype"] in ["perbuilding", "perroom", "perrequestor"]:
@@ -156,6 +160,7 @@ def crop_counts(labels: list[str], counts: list[int], args) -> tuple[list[str], 
     No sorting here. Preserves elements order given in arrays,
     Although other funcs may sort differently on "head"/"tail".
     """
+
     def prune_counts() -> tuple[list[str], list[int]]:
         pruned_labels: list[str] = []
         pruned_counts: list[str] = []
@@ -176,6 +181,7 @@ def crop_counts(labels: list[str], counts: list[int], args) -> tuple[list[str], 
     # no cropping
     return labels, counts
 
+
 def crop_tickets(tickets: list["Ticket"], args) -> list["Ticket"]:
     """
     Crop a simple ticket list based on head or tail in args.
@@ -187,6 +193,3 @@ def crop_tickets(tickets: list["Ticket"], args) -> list["Ticket"]:
 
     # no cropping
     return tickets
-
-
-
