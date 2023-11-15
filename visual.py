@@ -109,6 +109,7 @@ def view_show_tickets(tickets_matched: list["Ticket"], args: dict) -> None:
     for ticket in tickets_matched:
         print(ticket)
         print("----------------")
+    print(f"Matching tickets ({len(tickets_matched)})")
 
 
 def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
