@@ -320,6 +320,49 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
     And an (optional) list of filters from args to exclude,
     Return a list containing only tickets that pass all filters.
     """
+
+    def diagnoses_match(ticket: Ticket) -> bool:
+        """
+        Return True if user-given diagnoses match the ticket's diagnoses.
+        Uses "diagnoses" or "anddiagnoses" filtering as applicable.
+        """
+        # set user diagnoses and whether using "and" (match all) filtering`
+        and_filtering: bool = False
+        given_diagnoses: list[str]
+        if args.get("diagnoses"):
+            given_diagnoses = args["diagnoses"]
+        elif args.get("anddiagnoses"):
+            and_filtering = True
+            given_diagnoses = args["anddiagnoses"]
+        else:
+            given_diagnoses = []
+
+        # canonicalize user-given and ticket diagnoses for comparison
+        for i in range(len(given_diagnoses)):
+            given_diagnoses[i] = "".join(
+                char.lower() for char in given_diagnoses[i] if char.isalpha()
+            )
+        # copy list (not by reference), we can change it without affecting ticket data
+        ticket_diagnoses: list[str] = ticket.diagnoses[0:]
+        for i in range(len(ticket_diagnoses)):
+            ticket_diagnoses[i] = "".join(
+                char.lower() for char in ticket_diagnoses[i] if char.isalpha()
+            )
+
+        # perform filtering using set comparisons
+        ticket_diagnoses_set: set[str] = set(ticket_diagnoses)
+        given_diagnoses_set: set[str] = set(given_diagnoses)
+
+
+        if and_filtering and given_diagnoses_set.intersection(ticket_diagnoses_set) != given_diagnoses_set:
+            # ticket did not match all specified diagnoses ("and" filtering)
+            return False
+        elif not given_diagnoses_set.intersection(ticket_diagnoses_set):
+            # ticket did not match any of specified diagnoses
+            return False
+        return True
+
+    # setup values
     if type(tickets) == dict:
         tickets = tickets.values()
     term_start: datetime = None if "termstart" in exclude else args.get("termstart")
@@ -328,18 +371,6 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
 
     # requestor filter is list, as multiple matches are possible
     requestors: list[User] = None if "requestors" in exclude else args.get("requestors")
-
-    # handle diagnoses
-    # true if using "and" filtering (ticket must match all given diagnoses)
-    and_filtering: bool = False
-    diagnoses: set[str]
-    if args.get("diagnoses"):
-        diagnoses = args["diagnoses"]
-    elif args.get("anddiagnoses"):
-        and_filtering = True
-        diagnoses = args["anddiagnoses"]
-    else:
-        diagnoses = set()
 
     # make term_end inclusive of last day
     if term_end:
@@ -355,13 +386,8 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
             continue
         if term_end and ticket.created > term_end:
             continue
-        if diagnoses:
-            if and_filtering and diagnoses.intersection(ticket.diagnoses) != diagnoses:
-                # ticket did not match all specified diagnoses ("and" filtering)
-                continue
-            elif not diagnoses.intersection(ticket.diagnoses):
-                # ticket did not match any of specified diagnoses
-                continue
+        if not diagnoses_match(ticket):
+            continue
         # add ticket if it passes all filters
         filtered.append(ticket)
     return filtered

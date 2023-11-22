@@ -37,7 +37,7 @@ DEBUG_TRACEBACK = 3
 
 # for args that may be included in a config file
 STANDARD_ARGS = ["localreport", "name", "color", "termstart", "termend", "weeks", "building", "remail", "rname",
-                 "rphone", "diagnoses", "anddiagnoses", "head", "tail", "querytype"]
+                 "rphone", "diagnoses", "anddiagnoses", "head", "tail", "querytype", "daliases"]
 # args that should not be in a config file
 EXCLUDE_ARGS = ["version", "debug", "nographics", "printquery", "saveconfig", "config"]
 
@@ -61,7 +61,7 @@ def check_file(filename: str, filetype: str) -> bool:
     if not filename:
         # no filename provided
         return False
-    filename.strip()
+    filename = filename.strip()
     if not (os.path.exists(filename)):
         # file does not exist
         return False
@@ -193,9 +193,10 @@ def clean_args(args: dict, org: Organization) -> None:
     if args.get("diagnoses") or args.get("anddiagnoses"):
         rename_diagnoses(args)
 
-def rename_diagnoses(args: dict):
+
+def rename_diagnoses(args: dict) -> None:
     """
-    Turn the user-provided diagnoses filter into a set using
+    Turn the user-provided diagnoses filter into a list using
     diagnoses display names defined in diagnoses aliases file (if any).
     The diagnoses aliases file in args["daliases"] is expected valid.
     """
@@ -212,23 +213,34 @@ def rename_diagnoses(args: dict):
         # no diagnoses filtering at all
         raise ValueError("Neither 'diagnoses' nor 'anddiagnoses' contain values")
 
-    # canonize and split string into list
-    canonized_diagnoses_filter: str = "".join(char for char in diagnoses_filter.lower() if char.isalpha() or char == ",")
-    diagnoses_list: list[str] = canonized_diagnoses_filter.split(",")
+    # split string into list and strip diagnoses names
+    diagnoses_list: list[str] = diagnoses_filter.split(",")
+    for i in range(len(diagnoses_list)):
+        diagnoses_list[i] = diagnoses_list[i].strip()
 
-    # if no alias mappings provided, finish here
+    # if no diagnoses aliases file, finish here
     if not args.get("daliases"):
-        args[diagnoses_filter_type] = set(diagnoses_list)
+        args[diagnoses_filter_type] = diagnoses_list
+        return
 
-    # diagnoses aliases file present, so replace diagnoses values with display names
+    # diagnoses aliases file present
     aliases_file: typing.TextIO = open(args["daliases"], mode="r", encoding="utf-8-sig")
     alias_mappings: dict[str, str] = json.load(aliases_file)
-    for i in range(len(diagnoses_list)):
-        if alias_mappings.get(diagnoses_list[i]):
-            diagnoses_list[i] = alias_mappings[diagnoses_list[i]]
-    aliases_file.close()
-    args[diagnoses_filter_type] = set(diagnoses_list)
 
+    # replace diagnoses with display names from diagnoses aliases file
+    # if no alias mapping, just keep original diagnosis name
+    for i in range(len(diagnoses_list)):
+        # canonize string to use as key to find mapping
+        canon_diagnosis: str = "".join(
+            char for char in diagnoses_list[i] if char.isalpha()
+        )
+        if alias_mappings.get(canon_diagnosis):
+            # replace with display name if one is given by aliases file
+            diagnoses_list[i] = alias_mappings[canon_diagnosis]
+    aliases_file.close()
+
+    # give args dict the new diagnoses list
+    args[diagnoses_filter_type] = diagnoses_list
 
 def check_report(args: dict, report: Report) -> None:
     """
@@ -384,7 +396,10 @@ def load_config(args: dict):
         if args.get(arg) is None:
             args[arg] = json_args.get(arg)
 
-
+    # FIXME should this be in main func
+    # if no diagnoses aliases file provided, use default if it's valid
+    if not args.get("daliases") and check_file(DEFAULT_DIAGNOSES_ALIASES_FILE, "JSON"):
+        args["daliases"] = DEFAULT_DIAGNOSES_ALIASES_FILE
 
 
 def main(argv) -> None:
@@ -427,20 +442,15 @@ def main(argv) -> None:
         raise BadArgError("Invalid local report CSV file provided")
 
     # check for valid diagnoses JSON, if provided
-    if args.get("daliases"):
-        # make sure provided diagnoses aliases filename is valid file
-        if not check_file(args["daliases"], "JSON"):
-            raise BadArgError("Invalid diagnoses aliases JSON file provided")
-    elif check_file(DEFAULT_DIAGNOSES_ALIASES_FILE, "JSON"):
-        # use default diagnoses aliases filename if valid file
-        args["daliases"] = DEFAULT_DIAGNOSES_ALIASES_FILE
+    if args.get("daliases") and not check_file(args["daliases"], "JSON"):
+        raise BadArgError("Invalid diagnoses aliases JSON file provided")
+
+    # FIXME end section to be refactored into validity-checking function
 
     # save the (now validated) config to a file if requested
     if args.get("saveconfig"):
         save_config(args, args["saveconfig"])
         return
-
-    # FIXME end section to be refactored into validity-checking function
 
     # check report has enough info for query
     report = Report(args["localreport"], args["daliases"])

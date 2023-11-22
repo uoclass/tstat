@@ -127,7 +127,7 @@ class Ticket:
     room: Room
     created: datetime
     modified: datetime
-    diagnoses: set[str]
+    diagnoses: list[str]
     status: Status
 
     def __init__(self) -> None:

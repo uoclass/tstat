@@ -118,36 +118,42 @@ class Report:
                     return csv_ticket[column_name]
             return None
 
-        def gen_diagnoses() -> set[str]:
+        def gen_diagnoses() -> list[str]:
             """
-            Return set of diagnoses for the ticket being created using
+            Return list of diagnoses for the ticket being created using
             diagnoses display names from diagnoses aliases file (if any).
             File from self.diagnoses_aliases_filename expected valid.
             """
             # get diagnoses field from csv_ticket
             diagnoses_field: str = get_attribute("diagnoses")
 
-            # return empty set if nothing from diagnoses field
+            # return empty list if nothing from diagnoses field
             if not diagnoses_field:
-                return set()
+                return []
 
-            # canonize and split string into list
-            canonized_diagnoses_field: str = "".join(
-                char for char in diagnoses_field.lower() if char.isalpha() or char == ","
-            )
-            diagnoses_list: list[str] = canonized_diagnoses_field.split(",")
+            # split string into list and strip diagnoses names
+            diagnoses_list: list[str] = diagnoses_field.split(",")
+            for i in range(len(diagnoses_list)):
+                diagnoses_list[i] = diagnoses_list[i].strip()
 
-            # if alias mappings provided, replace with display names
+            # if no diagnoses aliases file, just return list
             if not self.diagnoses_aliases_filename:
-                return set(diagnoses_list)
-            # diagnoses aliases file present, so replace diagnoses values with display names
+                return diagnoses_list
+
             aliases_file: typing.TextIO = open(self.diagnoses_aliases_filename, mode="r", encoding="utf-8-sig")
             alias_mappings: dict[str, str] = json.load(aliases_file)
+            # replace diagnoses with display names from diagnoses aliases file
+            # if no alias mapping, just keep original diagnosis name
             for i in range(len(diagnoses_list)):
-                if alias_mappings.get(diagnoses_list[i]):
-                    diagnoses_list[i] = alias_mappings[diagnoses_list[i]]
+                # canonize string to use as key to find mapping
+                canon_diagnosis: str = "".join(
+                    char.lower() for char in diagnoses_list[i] if char.isalpha()
+                )
+                if alias_mappings.get(canon_diagnosis):
+                    # replace with display name if one is given by aliases file
+                    diagnoses_list[i] = alias_mappings[canon_diagnosis]
             aliases_file.close()
-            return set(diagnoses_list)
+            return diagnoses_list
 
         # new ticket
         new_ticket: Ticket = Ticket()
@@ -183,7 +189,7 @@ Possible bad usage of find_user() method""")
         modified_attribute: str = get_attribute("modified")
         new_ticket.modified = datetime.strptime(modified_attribute, self.time_format) if modified_attribute else None
 
-        # diagnoses attribute should be list of valid diagnoses strings
+        # diagnoses attribute should be set of valid diagnoses strings
         new_ticket.diagnoses = gen_diagnoses()
 
         # FIXME change to Enum once status functionality implemented
