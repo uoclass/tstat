@@ -396,11 +396,6 @@ def load_config(args: dict):
         if args.get(arg) is None:
             args[arg] = json_args.get(arg)
 
-    # FIXME should this be in main func
-    # if no diagnoses aliases file provided, use default if it's valid
-    if not args.get("daliases") and check_file(DEFAULT_DIAGNOSES_ALIASES_FILE, "JSON"):
-        args["daliases"] = DEFAULT_DIAGNOSES_ALIASES_FILE
-
 
 def main(argv) -> None:
     """
@@ -429,6 +424,10 @@ def main(argv) -> None:
 
     if args.get("config"):
         load_config(args)
+
+    # if no diagnoses aliases file provided, use default if it's valid
+    if not args.get("daliases") and check_file(DEFAULT_DIAGNOSES_ALIASES_FILE, "JSON"):
+        args["daliases"] = DEFAULT_DIAGNOSES_ALIASES_FILE
 
     # atp we expect a fully completed args dict
 

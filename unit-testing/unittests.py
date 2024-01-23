@@ -39,6 +39,8 @@ class TestOrganization(unittest.TestCase):
         ticket.requestor = user1
         ticket.responsible_group = group1
         ticket.department = dept1
+        ticket.created = datetime(2020, 1, 1)
+        ticket.modified = datetime(2020, 1, 1)
 
         org.add_new_ticket(ticket)
 
@@ -368,11 +370,11 @@ class TestOrganization(unittest.TestCase):
             org.tickets[0],
             org.tickets[1]
         ]
-        args = {"diagnoses": [Diagnosis("Touch Panel")]}
+        args = {"diagnoses": ["Touch Panel"]}
         for type in [ticket_dict, ticket_list]:
             filtered: list[Ticket] = filter_tickets(type, args)
             self.assertEqual(filtered, expected)
-        args = {"anddiagnoses": [Diagnosis("Touch Panel")]}
+        args = {"anddiagnoses": ["Touch Panel"]}
         for type in [ticket_dict, ticket_list]:
             filtered: list[Ticket] = filter_tickets(type, args)
             self.assertEqual(filtered, expected)
@@ -384,7 +386,7 @@ class TestOrganization(unittest.TestCase):
             org.tickets[4],
             org.tickets[5]
         ]
-        args = {"diagnoses": [Diagnosis("Cable--HDMI"), Diagnosis("Cable-Ethernet"), Diagnosis("Projector")]}
+        args = {"diagnoses": ["Cable--HDMI", "Cable-Ethernet", "Projector"]}
         for type in [ticket_dict, ticket_list]:
             filtered: list[Ticket] = filter_tickets(type, args)
             self.assertEqual(filtered, expected)
@@ -393,7 +395,7 @@ class TestOrganization(unittest.TestCase):
         expected = [
             org.tickets[2],
         ]
-        args = {"anddiagnoses": [Diagnosis("Cable--HDMI"), Diagnosis("Cable-Ethernet"), Diagnosis("Projector")]}
+        args = {"anddiagnoses": ["Cable--HDMI", "Cable-Ethernet", "Projector"]}
         for type in [ticket_dict, ticket_list]:
             filtered: list[Ticket] = filter_tickets(type, args)
             self.assertEqual(filtered, expected)
@@ -769,18 +771,15 @@ class TestCli(unittest.TestCase):
         """
         Test cases for check_file() function.
         """
-        # bad files
-        self.assertRaises(BadArgError, check_file, "unit-testing/no-file.csv")
-        self.assertRaises(BadArgError, check_file, "unit-testing/not-a-csv.txt")
-        self.assertRaises(BadArgError, check_file, "")
+        # expected true
+        self.assertTrue(check_file("unit-testing/minimal.csv", "CSV"))
+        self.assertTrue(check_file("unit-testing/missing-fields.csv", "CSV"))
+        self.assertTrue(check_file("unit-testing/expected-config1.json", "JSON"))
 
-        # expected errors from main()
-        argv: list[str] = ["-q", "perweek", "--localreport", "unit-testing/no-file.csv"]
-        self.assertRaises(BadArgError, main, argv)
-        argv = ["-q", "perweek", "--localreport", "unit-testing/not-a-csv.txt"]
-        self.assertRaises(BadArgError, main, argv)
-        argv = ["-q", "perweek"]
-        self.assertRaises(BadArgError, main, argv)
+        # expected false
+        self.assertFalse(check_file("unit-testing/no-file.csv", "CSV"))
+        self.assertFalse(check_file("unit-testing/not-a-csv.txt", "CSV"))
+        self.assertFalse(check_file("unit-testing/minimal.csv", "JSON"))
 
     def test_get_datetime(self):
         """
@@ -890,7 +889,7 @@ class TestCli(unittest.TestCase):
         # sample config 1 (no localreport)
         argv = ["--debug", "--nographics", "--saveconfig", "unit-testing/generated-config1.json", "-q", "perweek",
                 "--building", "Building3", "--remail", "requestor2@example.com", "--termstart", "5/15/2023",
-                "--weeks", "5"]
+                "--weeks", "5", "--daliases", "unit-testing/example-daliases.json"]
         main(argv)
         expected_file: typing.TextIO = open("unit-testing/expected-config1.json", "r")
         generated_file: typing.TextIO = open("unit-testing/generated-config1.json", "r")
@@ -903,7 +902,7 @@ class TestCli(unittest.TestCase):
 
         # sample config 2 (with localreport)
         argv = ["--debug", "--nographics", "--saveconfig", "unit-testing/generated-config2.json", "-q", "perrequestor",
-                "--termstart", "4/4/2023", "--termend", "6/16/2023", "--diagnoses", "Cable--HDMI, Cable-Ethernet",
+                "--termstart", "4/4/2023", "--termend", "6/16/2023", "--diagnoses", "Funny Cable, Evil Cable",
                 "--head", "3", "--name", "Cable Problems by Requestor", "--color", "blue", "--localreport",
                 "unit-testing/querytests1.csv"]
         main(argv)
@@ -946,7 +945,8 @@ class TestCli(unittest.TestCase):
             "anddiagnoses": None,
             "head": None,
             "tail": None,
-            "querytype": "perweek"
+            "querytype": "perweek",
+            "daliases": "unit-testing/example-daliases.json"
         }
         self.assertEqual(args, expected)
 
@@ -966,11 +966,12 @@ class TestCli(unittest.TestCase):
             "remail": None,
             "rname": None,
             "rphone": None,
-            "diagnoses": ["Cable--HDMI", "Cable-Ethernet"],
+            "diagnoses": ["Funny Cable", "Evil Cable"],
             "anddiagnoses": None,
             "head": 3,
             "tail": None,
-            "querytype": "perrequestor"
+            "querytype": "perrequestor",
+            "daliases": "diagnoses.json"
         }
         self.assertEqual(args, expected)
 
@@ -993,10 +994,11 @@ class TestCli(unittest.TestCase):
             "rname": None,
             "rphone": None,
             "diagnoses": "",
-            "anddiagnoses": "Projector, TV Display, Cable--HDMI",
+            "anddiagnoses": "Projector, TV Display, HDMI Cable",
             "head": 0,
             "tail": None,
-            "querytype": "perweek"
+            "querytype": "perweek",
+            "daliases": "unit-testing/example-daliases.json"
         }
         expected = {
             "localreport": "unit-testing/minimal.csv",
@@ -1010,10 +1012,11 @@ class TestCli(unittest.TestCase):
             "rname": None,
             "rphone": None,
             "diagnoses": None,
-            "anddiagnoses": ["Projector", "TV Display", "Cable--HDMI"],
+            "anddiagnoses": ["Projector", "TV Display", "HDMI Cable"],
             "head": None,
             "tail": None,
-            "querytype": "perweek"
+            "querytype": "perweek",
+            "daliases": "unit-testing/example-daliases.json"
         }
         load_config(args)
         clean_args(args, org)
@@ -1239,6 +1242,7 @@ if __name__ == "__main__":
     try:
         dir_test: typing.TextIO = open("unit-testing/context.py", mode="r", encoding="utf-8-sig")
         dir_test.close()
+    # FIXME this is unusual behavior, the testing file should be run from its own directory
     except OSError:
         raise Exception("Run unit tests from project root, not from unit-testing dir")
     unittest.main()

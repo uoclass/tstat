@@ -9,10 +9,11 @@
     "remail": null,
     "rname":null,
     "rphone":null,
-    "diagnoses": "Cable--HDMI, Cable-Ethernet",
+    "diagnoses": "Funny Cable, Evil Cable",
     "anddiagnoses": null,
     "head": 3,
     "tail": null,
     "prune": null,
-    "querytype": "perrequestor"
+    "querytype": "perrequestor",
+    "daliases": "diagnoses.json"
 }

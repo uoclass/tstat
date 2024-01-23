@@ -53,6 +53,7 @@ tickets: {len(self.tickets)}"""
         # check for valid ticket
         try:
             assert type(ticket.id) == int
+            # created and modified should be datetime or None
             assert type(ticket.created) != str
             assert type(ticket.modified) != str
         except AssertionError:
@@ -335,7 +336,8 @@ def filter_tickets(tickets: Union[dict[int, Ticket], list[Ticket]],
             and_filtering = True
             given_diagnoses = args["anddiagnoses"]
         else:
-            given_diagnoses = []
+            # not using diagnoses filtering, so match guaranteed
+            return True
 
         # canonicalize user-given and ticket diagnoses for comparison
         for i in range(len(given_diagnoses)):

@@ -14,5 +14,6 @@
     "head": null,
     "tail": null,
     "prune": null,
-    "querytype": "perweek"
+    "querytype": "perweek",
+    "daliases": "unit-testing/example-daliases.json"
 }
