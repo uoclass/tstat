@@ -120,12 +120,20 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
     # crop bars
     bar_labels, bar_heights = crop_counts(bar_labels, bar_heights, args)
 
+    # differentiate duplicate labels to prevent matplotlib grouping them
+    dupes: dict[str, int]= {}
+    for i in range(len(bar_labels)):
+        if not dupes.get(bar_labels[i]):
+            dupes[bar_labels[i]] = 1
+        else:
+            dupes[bar_labels[i]] += 1
+            bar_labels[i] = f"{bar_labels[i]} ({dupes[bar_labels[i]]})"
+
     # initialize the graph
     fig, ax = pyplot.subplots(figsize=(10, 5))
     color: str = args["color"] if args.get("color") else DEFAULT_COLOR
     ax.bar(bar_labels, bar_heights, color=args.get("color"))
 
-    # pyplot.xlabel("Weeks") # removed cause each bar is labeled Week (num)
     ax.set_ylabel("Count")
     if args.get("name"):
         ax.set_title(args["name"])
