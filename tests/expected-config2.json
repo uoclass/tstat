@@ -1,5 +1,5 @@
 {
-    "localreport": "unit-testing/querytests1.csv",
+    "localreport": "querytests1.csv",
     "name": "Cable Problems by Requestor",
     "color": "blue",
     "termstart": "4/4/2023",
@@ -15,5 +15,5 @@
     "tail": null,
     "prune": null,
     "querytype": "perrequestor",
-    "daliases": "diagnoses.json"
+    "daliases": null
 }

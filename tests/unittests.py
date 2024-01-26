@@ -6,11 +6,25 @@ by Eric Edwards, Alex JPS
 Unit testing for all tdxplot files
 """
 
-import context
+# resolve importing tstat Python files
+import sys, os
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.insert(0, project_root)
+
+# resolve finding filenames in tests dir
+tests_dir = os.path.abspath(os.path.dirname(__file__))
+cur_dir = os.getcwd()
+if tests_dir != cur_dir:
+    os.chdir(tests_dir)
+    print("Please run unit tests from tests dir")
+    print(f"Changed working dir: {os.getcwd()}")
+
+# import modules
 import unittest
+
+# import tstat Python files
 from report import *
 from cli import *
-
 
 class TestOrganization(unittest.TestCase):
     """
@@ -24,6 +38,7 @@ class TestOrganization(unittest.TestCase):
         Ensure ticket is added to org.tickets dict
         And to on-campus entities' ticket lists.
         """
+        print(os.getcwd())
         # setup
         org = Organization()
         building1: Building = org.find_building("Building", create_mode=True)
@@ -296,7 +311,7 @@ class TestOrganization(unittest.TestCase):
         Test cases for filter_tickets() helper function.
         """
         # set up
-        report = Report("unit-testing/querytests1.csv")
+        report = Report("querytests1.csv")
         org = Organization()
         report.populate(org)
         # using 4 filters here to test "exclude" arg for filter_tickets()
@@ -414,7 +429,7 @@ class TestQueries(unittest.TestCase):
         """
         # setup
         org = Organization()
-        report = Report("unit-testing/querytests1.csv")
+        report = Report("querytests1.csv")
         report.populate(org)
 
         # no args
@@ -540,7 +555,7 @@ class TestQueries(unittest.TestCase):
         """
         # setup
         org = Organization()
-        report = Report("unit-testing/querytests1.csv")
+        report = Report("querytests1.csv")
         report.populate(org)
         building1 = org.find_building("Building1")
         building2 = org.find_building("Building2")
@@ -587,7 +602,7 @@ class TestQueries(unittest.TestCase):
         Test cases for show_tickets() method.
         """
         # setup
-        report = Report("unit-testing/querytests1.csv")
+        report = Report("querytests1.csv")
         org = Organization()
         report.populate(org)
 
@@ -601,7 +616,7 @@ class TestQueries(unittest.TestCase):
         """
         # setup
         org = Organization()
-        report = Report("unit-testing/querytests1.csv")
+        report = Report("querytests1.csv")
         report.populate(org)
         building1 = org.find_building("Building1")
         building2 = org.find_building("Building2")
@@ -694,7 +709,7 @@ class TestQueries(unittest.TestCase):
         """
         # setup
         org = Organization()
-        report = Report("unit-testing/querytests1.csv")
+        report = Report("querytests1.csv")
         report.populate(org)
         requestor1: User = org.find_user("requestor1@example.com")[0]
         requestor2: User = org.find_user("requestor2@example.com")[0]
@@ -763,7 +778,7 @@ class TestCli(unittest.TestCase):
         """
         Ensure traceback is changed by --debug flag.
         """
-        argv: list[str] = ["--debug", "-q", "perweek", "--nographics", "--localreport", "unit-testing/minimal.csv"]
+        argv: list[str] = ["--debug", "-q", "perweek", "--nographics", "--localreport", "minimal.csv"]
         main(argv)
         self.assertEqual(sys.tracebacklimit, DEBUG_TRACEBACK)
 
@@ -772,14 +787,14 @@ class TestCli(unittest.TestCase):
         Test cases for check_file() function.
         """
         # expected true
-        self.assertTrue(check_file("unit-testing/minimal.csv", "CSV"))
-        self.assertTrue(check_file("unit-testing/missing-fields.csv", "CSV"))
-        self.assertTrue(check_file("unit-testing/expected-config1.json", "JSON"))
+        self.assertTrue(check_file("minimal.csv", "CSV"))
+        self.assertTrue(check_file("missing-fields.csv", "CSV"))
+        self.assertTrue(check_file("expected-config1.json", "JSON"))
 
         # expected false
-        self.assertFalse(check_file("unit-testing/no-file.csv", "CSV"))
-        self.assertFalse(check_file("unit-testing/not-a-csv.txt", "CSV"))
-        self.assertFalse(check_file("unit-testing/minimal.csv", "JSON"))
+        self.assertFalse(check_file("no-file.csv", "CSV"))
+        self.assertFalse(check_file("not-a-csv.txt", "CSV"))
+        self.assertFalse(check_file("minimal.csv", "JSON"))
 
     def test_get_datetime(self):
         """
@@ -799,7 +814,7 @@ class TestCli(unittest.TestCase):
 
         # expected errors from main()
         argv: list[str] = ["--debug", "--nographics", "--querytype", "perweek", "-t", "19700101", "--localreport",
-                           "unit-testing/minimal.csv"]
+                           "minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
     def test_check_options(self):
@@ -808,26 +823,26 @@ class TestCli(unittest.TestCase):
         Tests main(argv) rather than check_options() directly.
         """
         # debug stipulations (pass --nographics without --debug)
-        argv: list[str] = ["--nographics", "-q", "perweek", "--localreport", "unit-testing/minimal.csv"]
+        argv: list[str] = ["--nographics", "-q", "perweek", "--localreport", "minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perbuilding stipulations (pass -b with --perbuilding)
         argv = ["--debug", "--nographics", "-q", "perbuilding", "-b", "Lillis", "--localreport",
-                "unit-testing/minimal.csv"]
+                "minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perweek stipulations
         # pass -w without --perweek
-        argv = ["--debug", "--nographics", "-q", "perbuilding", "-w", "10", "--localreport", "unit-testing/minimal.csv"]
+        argv = ["--debug", "--nographics", "-q", "perbuilding", "-w", "10", "--localreport", "minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
         # pass -w and -e at once
         argv = ["--debug", "--nographics", "-q", "perweek", "-w", "10", "-e", "12/31/2023", "--localreport",
-                "unit-testing/minimal.csv"]
+                "minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # perrequestor stipulations
         argv = ["--debug", "--nographics", "-q", "perrequestor", "--remail", "requestor1@example.com",
-                "--localreport", "unit-testing/minimal.csv"]
+                "--localreport", "minimal.csv"]
         self.assertRaises(BadArgError, main, argv)
 
         # saveconfig stipulations
@@ -860,7 +875,7 @@ class TestCli(unittest.TestCase):
         """
         # correct fields present
         org = Organization()
-        report = Report("unit-testing/minimal.csv")
+        report = Report("minimal.csv")
         report.populate(org)
         args: dict = {"querytype": "perweek"}
         check_report(args, report)
@@ -871,7 +886,7 @@ class TestCli(unittest.TestCase):
 
         # missing fields
         org = Organization()
-        report = Report("unit-testing/missing-fields.csv")
+        report = Report("missing-fields.csv")
         report.populate(org)
         args = {"querytype": "perweek"}
         self.assertRaises(BadArgError, check_report, args, report)
@@ -884,48 +899,49 @@ class TestCli(unittest.TestCase):
         """
         Test cases for save_config() method.
         """
+        print(os.getcwd())
         argv: list[str]
 
         # sample config 1 (no localreport)
-        argv = ["--debug", "--nographics", "--saveconfig", "unit-testing/generated-config1.json", "-q", "perweek",
+        argv = ["--debug", "--nographics", "--saveconfig", "generated-config1.json", "-q", "perweek",
                 "--building", "Building3", "--remail", "requestor2@example.com", "--termstart", "5/15/2023",
-                "--weeks", "5", "--daliases", "unit-testing/example-daliases.json"]
+                "--weeks", "5", "--daliases", "example-daliases.json"]
         main(argv)
-        expected_file: typing.TextIO = open("unit-testing/expected-config1.json", "r")
-        generated_file: typing.TextIO = open("unit-testing/generated-config1.json", "r")
+        expected_file: typing.TextIO = open("expected-config1.json", "r")
+        generated_file: typing.TextIO = open("generated-config1.json", "r")
         expected: dict = json.load(expected_file)
         generated: dict = json.load(generated_file)
         self.assertEqual(expected, generated)
         expected_file.close()
         generated_file.close()
-        os.remove("unit-testing/generated-config1.json")
+        os.remove("generated-config1.json")
 
         # sample config 2 (with localreport)
-        argv = ["--debug", "--nographics", "--saveconfig", "unit-testing/generated-config2.json", "-q", "perrequestor",
+        argv = ["--debug", "--nographics", "--saveconfig", "generated-config2.json", "-q", "perrequestor",
                 "--termstart", "4/4/2023", "--termend", "6/16/2023", "--diagnoses", "Funny Cable, Evil Cable",
                 "--head", "3", "--name", "Cable Problems by Requestor", "--color", "blue", "--localreport",
-                "unit-testing/querytests1.csv"]
+                "querytests1.csv"]
         main(argv)
-        expected_file: typing.TextIO = open("unit-testing/expected-config2.json", "r")
-        generated_file: typing.TextIO = open("unit-testing/generated-config2.json", "r")
+        expected_file: typing.TextIO = open("expected-config2.json", "r")
+        generated_file: typing.TextIO = open("generated-config2.json", "r")
         expected: dict = json.load(expected_file)
         generated: dict = json.load(generated_file)
         self.assertEqual(expected, generated)
         expected_file.close()
         generated_file.close()
-        os.remove("unit-testing/generated-config2.json")
+        os.remove("generated-config2.json")
 
     def test_load_config(self):
         """
         Test cases for load_config() method.
         """
         # setup
-        report: Report = Report("unit-testing/querytests1.csv")
+        report: Report = Report("querytests1.csv")
         org: Organization = Organization()
         report.populate(org)
 
         # load sample config 1
-        args: dict = {"config": "unit-testing/expected-config1.json"}
+        args: dict = {"config": "expected-config1.json"}
         load_config(args)
         clean_args(args, org)
         # ensure it matches expected args dict
@@ -946,17 +962,17 @@ class TestCli(unittest.TestCase):
             "head": None,
             "tail": None,
             "querytype": "perweek",
-            "daliases": "unit-testing/example-daliases.json"
+            "daliases": "example-daliases.json"
         }
         self.assertEqual(args, expected)
 
         # load sample config 2
-        args: dict = {"config": "unit-testing/expected-config2.json"}
+        args: dict = {"config": "expected-config2.json"}
         load_config(args)
         clean_args(args, org)
         # ensure it matches expected args dict
         expected: dict = {
-            "localreport": "unit-testing/querytests1.csv",
+            "localreport": "querytests1.csv",
             "name": "Cable Problems by Requestor",
             "color": "blue",
             "termstart": datetime(2023, 4, 4),
@@ -971,19 +987,19 @@ class TestCli(unittest.TestCase):
             "head": 3,
             "tail": None,
             "querytype": "perrequestor",
-            "daliases": "diagnoses.json"
+            "daliases": None
         }
         self.assertEqual(args, expected)
 
         # using a different report
-        report: Report = Report("unit-testing/minimal.csv")
+        report: Report = Report("minimal.csv")
         org: Organization = Organization()
         report.populate(org)
 
         # test that user-provided args replace json args
         args = {
-            "config": "unit-testing/expected-config2.json",
-            "localreport": "unit-testing/minimal.csv",
+            "config": "expected-config2.json",
+            "localreport": "minimal.csv",
             "name": "",  # user can pass empty quotes for None
             "color": "red",
             "termstart": None,  # None means leave the json arg untouched
@@ -998,10 +1014,10 @@ class TestCli(unittest.TestCase):
             "head": 0,
             "tail": None,
             "querytype": "perweek",
-            "daliases": "unit-testing/example-daliases.json"
+            "daliases": "example-daliases.json"
         }
         expected = {
-            "localreport": "unit-testing/minimal.csv",
+            "localreport": "minimal.csv",
             "name": None,
             "color": "red",
             "termstart": datetime(2023, 4, 4),
@@ -1016,7 +1032,7 @@ class TestCli(unittest.TestCase):
             "head": None,
             "tail": None,
             "querytype": "perweek",
-            "daliases": "unit-testing/example-daliases.json"
+            "daliases": "example-daliases.json"
         }
         load_config(args)
         clean_args(args, org)
@@ -1034,7 +1050,7 @@ class TestReport(unittest.TestCase):
         Test cases for populate() method.
         """
         org = Organization()
-        report = Report("unit-testing/minimal.csv")
+        report = Report("minimal.csv")
         report.populate(org)
 
         # all campus entities created
@@ -1076,7 +1092,7 @@ class TestReport(unittest.TestCase):
         """
         # setup
         # minimal.csv irrelevant to this test, passing to avoid error
-        report = Report("unit-testing/minimal.csv")
+        report = Report("minimal.csv")
         org = Organization()
         ticket_dict: dict = {"ID": "12345678",
                              "Title": "My Ticket",
@@ -1126,13 +1142,13 @@ class TestReport(unittest.TestCase):
         Test cases for __init__() constructor.
         """
         # ensure time_format and fields_present set well
-        full_report: Report = Report("unit-testing/minimal.csv")
+        full_report: Report = Report("minimal.csv")
         self.assertEqual(full_report.fields_present,
                          ["id", "title", "responsible_group", "requestor_name", "requestor_email",
                           "requestor_phone", "department", "building", "room_identifier",
                           "diagnoses", "created", "modified", "status"])
         self.assertEqual(full_report.time_format, "%m/%d/%Y %H:%M")
-        part_report: Report = Report("unit-testing/missing-fields.csv")
+        part_report: Report = Report("missing-fields.csv")
         self.assertEqual(part_report.fields_present, ["id", "title", "responsible_group", "department", "status"])
         self.assertEqual(part_report.time_format, None)
 
@@ -1198,7 +1214,7 @@ class TestVisual(unittest.TestCase):
         Test cases for crop_tickets() method.
         """
         # setup
-        report: Report = Report("unit-testing/querytests1.csv")
+        report: Report = Report("querytests1.csv")
         org: Organization = Organization()
         report.populate(org)
         source_list: list[Ticket] = [
@@ -1237,12 +1253,7 @@ class TestVisual(unittest.TestCase):
         cropped_list: list[Ticket] = crop_tickets(source_list, args)
         self.assertEqual(expected_list, cropped_list)
 
-
 if __name__ == "__main__":
-    try:
-        dir_test: typing.TextIO = open("unit-testing/context.py", mode="r", encoding="utf-8-sig")
-        dir_test.close()
-    # FIXME this is unusual behavior, the testing file should be run from its own directory
-    except OSError:
-        raise Exception("Run unit tests from project root, not from unit-testing dir")
     unittest.main()
+else:
+    print("Importing unittests.py is not recommended (unless using an interactive shell)")
