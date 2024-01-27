@@ -969,8 +969,10 @@ class TestCli(unittest.TestCase):
         # load sample config 2
         args: dict = {"config": "expected-config2.json"}
         load_config(args)
+        # diagnoses should appear as in the config (before canonicalization)
+        self.assertEqual(args["diagnoses"], "Funny Cable, Evil Cable")
         clean_args(args, org)
-        # ensure it matches expected args dict
+        # ensure it matches expected args dict after cleaning
         expected: dict = {
             "localreport": "querytests1.csv",
             "name": "Cable Problems by Requestor",
@@ -982,7 +984,7 @@ class TestCli(unittest.TestCase):
             "remail": None,
             "rname": None,
             "rphone": None,
-            "diagnoses": ["Funny Cable", "Evil Cable"],
+            "diagnoses": ["funnycable", "evilcable"],
             "anddiagnoses": None,
             "head": 3,
             "tail": None,
@@ -1028,13 +1030,15 @@ class TestCli(unittest.TestCase):
             "rname": None,
             "rphone": None,
             "diagnoses": None,
-            "anddiagnoses": ["Projector", "TV Display", "HDMI Cable"],
+            "anddiagnoses": ["projector", "tvdisplay", "hdmicable"],
             "head": None,
             "tail": None,
             "querytype": "perweek",
             "daliases": "example-daliases.json"
         }
         load_config(args)
+        # diagnoses should appear as in the args (before canonicalization)
+        self.assertEqual(args["anddiagnoses"], "Projector, TV Display, HDMI Cable")
         clean_args(args, org)
         self.assertEqual(args, expected)
 

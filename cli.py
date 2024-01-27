@@ -216,7 +216,9 @@ def rename_diagnoses(args: dict) -> None:
     # split string into list and strip diagnoses names
     diagnoses_list: list[str] = diagnoses_filter.split(",")
     for i in range(len(diagnoses_list)):
-        diagnoses_list[i] = diagnoses_list[i].strip()
+        diagnoses_list[i] = "".join(
+            char.lower() for char in diagnoses_list[i] if char.isalpha()
+        )
 
     # if no diagnoses aliases file, finish here
     if not args.get("daliases"):
