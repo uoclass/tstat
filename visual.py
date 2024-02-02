@@ -18,7 +18,9 @@ DEFAULT_COLOR = "gray"
 DEFAULT_NAMES = {"perweek": "Tickets per Week",
                  "perbuilding": "Tickets per Building",
                  "perroom": "Tickets per Room",
-                 "perrequestor": "Tickets per Requestor"}
+                 "perrequestor": "Tickets per Requestor",
+                 "perdiagnosis": "Tickets per Diagnosis"
+                 }
 PRUNE_COUNT = 15
 
 
@@ -94,6 +96,18 @@ def view_per_requestor(tickets_per_requestor: dict["User", int], args: dict) -> 
 
     bar_view(requestor_labels, requestor_counts, args)
 
+def view_per_diagnosis(tickets_per_diagnosis: dict[str, int], args: dict) -> None:
+    """
+    Display bar chart showing ticket counts per diagnosis.
+    """
+    diagnosis_labels: list[str] = []
+    diagnosis_counts: list[int] = []
+    for diagnosis in tickets_per_diagnosis.keys():
+        diagnosis_labels.append(diagnosis)
+        diagnosis_counts.append(tickets_per_diagnosis[diagnosis])
+
+    bar_view(diagnosis_labels, diagnosis_counts, args)
+
 
 def view_show_tickets(tickets_matched: list["Ticket"], args: dict) -> None:
     """
@@ -154,7 +168,7 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
             fontsize="medium"
         )
 
-    if args["querytype"] in ["perbuilding", "perroom", "perrequestor"]:
+    if args["querytype"] in ["perbuilding", "perroom", "perrequestor", "perdiagnosis"]:
         # adjust for long building names
         # FIXME take in building name abbreviations
         pyplot.xticks(rotation=45, ha='right')

@@ -300,6 +300,20 @@ tickets: {len(self.tickets)}"""
         # return dict of counts per requestor
         return requestor_count
 
+    def per_diagnosis(self, args: dict) -> dict[str, int]:
+        """
+        Return a dict counting tickets by diagnosis.
+        Tickets with multiple diagnoses will be counted multiple times.
+        """
+        diagnoses_count: dict[str, int] = {}
+        filtered_tickets = filter_tickets(self.tickets, args, [])
+        for ticket in filtered_tickets:
+            for diagnosis in ticket.diagnoses:
+                if diagnoses_count.get(diagnosis):
+                    diagnoses_count[diagnosis] += 1
+                else:
+                    diagnoses_count[diagnosis] = 1
+        return diagnoses_count
 
 # Helper functions
 

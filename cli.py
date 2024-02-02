@@ -31,7 +31,7 @@ PROGRAM_AUTHORS = "by Alex JPS, Eric Edwards, Alexa Roskowski"
 # constants
 COLORS: list[str] = ["white", "black", "gray", "yellow", "red", "blue", "green", "brown", "pink", "orange", "purple"]
 DATE_FORMATS: list[str] = ["%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d.%m.%Y", "%d.%m.%y"]
-QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor", "showtickets"]
+QUERY_TYPES = ["perweek", "perbuilding", "perroom", "perrequestor", "showtickets", "perdiagnosis"]
 DEFAULT_TRACEBACK = 0
 DEBUG_TRACEBACK = 3
 
@@ -112,6 +112,10 @@ def check_options(args: dict) -> None:
     # Stipulations for perbuilding
     if args["querytype"] == "perbuilding" and args.get("building"):
         raise BadArgError("Cannot filter to a single building in a perbuilding query")
+
+    # Stipulations for perdiagnosis
+    if args["querytype"] == "perdiagnosis" and (args.get("diagnoses") or args.get("anddiagnoses")):
+        raise BadArgError("Cannot filter diagnoses in a perdiagnosis query")
 
     # Stipulations for perweek
     if args["querytype"] != "perweek" and args.get("weeks") is not None:
@@ -353,6 +357,12 @@ def run_query(args: dict, org: Organization) -> Union[dict, list[Ticket]]:
         if not args.get("nographics"):
             view_show_tickets(tickets_matched, args)
         query_result = tickets_matched
+    if query_type == "perdiagnosis":
+        tickets_per_diagnosis = org.per_diagnosis(args)
+        if not args.get("nographics"):
+            view_per_diagnosis(tickets_per_diagnosis, args)
+        query_result = tickets_per_diagnosis
+
 
     # print query results if option enabled
     if args.get("printquery") and args["querytype"] != "showtickets":
