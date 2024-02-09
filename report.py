@@ -31,6 +31,7 @@ STANDARD_FIELDS: dict[str, list[str]] = {
     "building": ["Location", "Class Support Building"],
     "room_identifier": ["Location Room", "Room number"],
     "diagnoses": ["Classroom Problem Types"],
+    "diagnoses_note": ["Classroom Support Other"],
     "created": ["Created"],
     "modified": ["Modified"],
     "status": ["Status"]
@@ -191,6 +192,9 @@ Possible bad usage of find_user() method""")
 
         # diagnoses attribute should be set of valid diagnoses strings
         new_ticket.diagnoses = gen_diagnoses()
+
+        # set diagnoses_note attribute
+        new_ticket.diagnoses_note = get_attribute("diagnoses_note")
 
         # FIXME change to Enum once status functionality implemented
         new_ticket.status = get_attribute("status")

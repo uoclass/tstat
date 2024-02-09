@@ -128,6 +128,7 @@ class Ticket:
     created: datetime
     modified: datetime
     diagnoses: list[str]
+    diagnoses_note: str
     status: Status
 
     def __init__(self) -> None:
@@ -155,6 +156,7 @@ Room: {self.room}
 Created: {self.created}
 Modified: {self.modified}
 Diagnoses: {diagnoses_string}
+Diagnoses Note: {self.diagnoses_note}
 Status: {self.status}"""
 
     def __repr__(self) -> str:
