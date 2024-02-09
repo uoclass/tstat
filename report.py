@@ -233,6 +233,11 @@ def get_fields_present(csv_ticket: dict) -> Union[list[str], None]:
         if not attribute_present:
             missing_fields.append(attribute)
 
+    # halt if no ID
+    if "id" in missing_fields:
+        print("Report does not have ticket IDs. The program cannot run", file=sys.stderr)
+        exit(1)
+
     # general guidelines warning
     if missing_fields or legacy_fields:
         print("Report does not follow tdxplot Standard Report Guidlines. See issues below:", file=sys.stderr)
