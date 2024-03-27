@@ -102,9 +102,10 @@ def view_per_diagnosis(tickets_per_diagnosis: dict[str, int], args: dict) -> Non
     """
     diagnosis_labels: list[str] = []
     diagnosis_counts: list[int] = []
-    for diagnosis in tickets_per_diagnosis.keys():
+    sorted_counts = sorted(tickets_per_diagnosis.items(), key=lambda item: item[1], reverse=True)
+    for diagnosis, count in sorted_counts:
         diagnosis_labels.append(diagnosis)
-        diagnosis_counts.append(tickets_per_diagnosis[diagnosis])
+        diagnosis_counts.append(count)
 
     bar_view(diagnosis_labels, diagnosis_counts, args)
 
