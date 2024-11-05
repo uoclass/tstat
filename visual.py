@@ -132,8 +132,15 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
     Display a bar chart using given bar labels and bar heights.
     Applies cosmetic changes from args.
     """
+
     # crop bars
     bar_labels, bar_heights = crop_counts(bar_labels, bar_heights, args)
+    
+    # crop unwieldy names
+    for i in range(len(bar_labels)):
+        label = bar_labels[i]
+        if len(label) > 20:
+            bar_labels[i] = label[:16] + "..."
 
     # differentiate duplicate labels to prevent matplotlib grouping them
     dupes: dict[str, int]= {}
