@@ -60,7 +60,9 @@ def view_per_building(tickets_per_building: dict["Building", int], args: dict) -
     building_counts: list[int] = []
     sorted_counts = sorted(tickets_per_building.items(), key=lambda item: item[1], reverse=True)
     for building, count in sorted_counts:
-        building_labels.append(building.name)
+        # crop unwieldy requestor names
+        building_name = building.name if len(building.name) < 20 else building.name[:15] + "..."
+        building_labels.append(building_name)
         building_counts.append(count)
 
     bar_view(building_labels, building_counts, args)
@@ -74,9 +76,12 @@ def view_per_room(tickets_per_room: dict["Room", int], args: dict) -> None:
     room_counts: list[int] = []
     sorted_counts = sorted(tickets_per_room.items(), key=lambda item: item[1], reverse=True)
     for room, count in sorted_counts:
-        room_label = f"{room.building.name} {room.identifier}"
+        # crop unwieldy building names
+        building_name = room.building.name if len(room.building.name) < 15 else room.building.name[:10] + "..."
+        room_label = f"{building_name} {room.identifier}"
         room_labels.append(room_label)
         room_counts.append(count)
+
 
     bar_view(room_labels, room_counts, args)
 
@@ -90,7 +95,8 @@ def view_per_requestor(tickets_per_requestor: dict["User", int], args: dict) -> 
     requestor_counts: list[int] = []
     sorted_counts = sorted(tickets_per_requestor.items(), key=lambda item: item[1], reverse=True)
     for requestor, count in sorted_counts:
-        requestor_name = f"{requestor.name}"
+        # crop unwieldy requestor names
+        requestor_name = requestor.name if len(requestor.name) < 20 else requestor.name[:15] + "..."
         requestor_labels.append(requestor_name)
         requestor_counts.append(count)
 
@@ -135,12 +141,6 @@ def bar_view(bar_labels: list[str], bar_heights: list[int], args: dict) -> None:
 
     # crop bars
     bar_labels, bar_heights = crop_counts(bar_labels, bar_heights, args)
-    
-    # crop unwieldy names
-    for i in range(len(bar_labels)):
-        label = bar_labels[i]
-        if len(label) > 20:
-            bar_labels[i] = label[:16] + "..."
 
     # differentiate duplicate labels to prevent matplotlib grouping them
     dupes: dict[str, int]= {}
